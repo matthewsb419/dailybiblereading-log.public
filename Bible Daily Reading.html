@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#101820">
+<title>Reading Log</title>
+<style>
+:root{--ink:#101820;--raised:#1a2530;--line:#2b3946;--parchment:#e9e3d6;--muted:#8c96a1;--brass:#c79a4b;--rust:#a8654a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:var(--parchment);
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+ -webkit-font-smoothing:antialiased;padding:env(safe-area-inset-top) 0 0 0}
+#app{max-width:620px;margin:0 auto;padding:22px 18px 48px}
+.serif{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif}
+.head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;gap:12px}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+h1{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:30px;font-weight:600;margin:0;line-height:1.05}
+.count{text-align:right;line-height:1.1;flex-shrink:0}
+.count b{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:28px;color:var(--brass);display:block;font-weight:400}
+.count span{font-size:11px;color:var(--muted)}
+nav{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+nav button{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);
+ font-size:13px;letter-spacing:.06em;text-transform:uppercase;padding:8px 12px;cursor:pointer;margin-bottom:-1px}
+nav button.on{color:var(--brass);border-bottom-color:var(--brass)}
+.card{background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.date{font-size:15px;font-weight:600}
+.link{background:none;border:none;color:var(--brass);font-size:12px;padding:4px 0 0;cursor:pointer}
+.stepper{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.stepper button{width:30px;height:30px;border-radius:6px;border:1px solid var(--line);
+ background:transparent;color:var(--parchment);font-size:16px;line-height:1;cursor:pointer}
+.stepper button:disabled{opacity:.3}
+.stepper span{font-size:11px;color:var(--muted);min-width:52px;text-align:center}
+.assign{margin:16px 0 20px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.assign .ref{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:27px;color:var(--brass);line-height:1.15}
+.assign .meta{font-size:12px;color:var(--muted);margin-top:5px}
+.field{margin-bottom:16px}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;line-height:1.35}
+textarea{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:8px;color:var(--parchment);
+ font-size:16px;line-height:1.5;padding:10px 11px;resize:vertical;min-height:76px;
+ font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif}
+textarea:focus{outline:2px solid var(--brass);outline-offset:1px;border-color:transparent}
+textarea::placeholder{color:#4a5764}
+.cardfoot{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.status{font-size:12px;color:var(--muted);min-height:16px;line-height:1.4}
+.status.err{color:var(--rust)}
+.pill{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:3px 9px;
+ flex-shrink:0;font-variant-numeric:tabular-nums}
+.pill.on{color:var(--ink);background:var(--brass);border-color:var(--brass);font-weight:600}
+.sechead{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;letter-spacing:.14em;
+ text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.big{display:flex;align-items:baseline;justify-content:space-between;margin:6px 0 4px}
+.big .pct{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:44px;line-height:1;font-variant-numeric:tabular-nums}
+.big .grade{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:44px;line-height:1;color:var(--brass)}
+.big .grade.off{color:var(--line)}
+.sub{font-size:13px;color:var(--muted);line-height:1.45}
+.bar{position:relative;height:6px;background:var(--ink);border-radius:3px;margin:14px 0 8px}
+.bar i{display:block;height:100%;background:var(--brass);border-radius:3px}
+.bar u{position:absolute;top:-3px;width:2px;height:12px;background:var(--parchment)}
+.verdict{font-size:12px;color:var(--muted)}
+.verdict.on{color:var(--brass)}
+.mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:18px 0 12px}
+.mgrid span{aspect-ratio:1;border-radius:5px;font-size:11px;display:flex;align-items:center;justify-content:center;
+ font-variant-numeric:tabular-nums;border:1px solid var(--line);color:#55626f}
+.mgrid span.complete{background:var(--brass);border-color:var(--brass);color:var(--ink);font-weight:600}
+.mgrid span.partial{border-color:var(--brass);color:var(--brass)}
+.mgrid span.out{border-color:transparent;color:#262f38}
+.legend{display:flex;gap:14px;font-size:11px;color:var(--muted);flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:5px}
+.sw{width:10px;height:10px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+.sw.c{background:var(--brass);border-color:var(--brass)}
+.sw.p{border-color:var(--brass)}
+.weekrow{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.dots{display:flex;gap:6px}
+.dots i{width:22px;height:22px;border-radius:5px;border:1px solid var(--line);display:block}
+.dots i.complete{background:var(--brass);border-color:var(--brass)}
+.dots i.partial{border-color:var(--brass)}
+.wnum{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:22px;font-variant-numeric:tabular-nums}
+.wnum small{font-size:13px;color:var(--muted);margin-left:8px}
+.wnum small.on{color:var(--brass)}
+.note{font-size:12px;color:var(--muted);margin-top:12px;border-left:2px solid var(--line);padding-left:9px;line-height:1.45}
+.totals{display:flex;justify-content:space-between;gap:10px}
+.totals b{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:26px;color:var(--brass);
+ line-height:1.1;display:block;font-weight:400}
+.totals span{font-size:11px;color:var(--muted);margin-top:2px;display:block}
+.row{display:grid;grid-template-columns:52px 1fr 54px;gap:8px;align-items:baseline;width:100%;text-align:left;
+ background:none;border:none;border-bottom:1px solid var(--line);padding:11px 2px;cursor:pointer;color:var(--parchment)}
+.row .d{font-size:12px;color:var(--muted)}
+.row .r{font-size:13px;color:var(--brass);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.row .m{font-size:11px;color:var(--muted);text-align:right}
+.row .m.on{color:var(--brass)}
+.mrow{display:grid;grid-template-columns:1fr 52px 60px 34px;gap:8px;align-items:baseline;
+ border-bottom:1px solid var(--line);padding:11px 2px}
+.mrow .n{font-size:13px}
+.mrow .f,.mrow .p{font-size:12px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.mrow .p.on{color:var(--brass)}
+.mrow .g{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:16px;color:var(--brass);text-align:right}
+.actions{margin-top:20px;display:flex;gap:8px;flex-wrap:wrap}
+.actions button{flex:1;min-width:104px;padding:11px 12px;border-radius:8px;border:1px solid var(--brass);
+ background:transparent;color:var(--brass);font-size:13px;cursor:pointer}
+.actions button.quiet{border-color:var(--line);color:var(--muted)}
+.foot{font-size:11px;color:var(--muted);line-height:1.5;margin:12px 2px 0}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<input type="file" id="importer" accept="application/json" class="hidden">
+<script>
+"use strict";
+
+/* ---------- plan ---------- */
+var VPM = 4, CEIL = 60, MINV = 20, MONTH_TARGET = 80, WEEK_TARGET = 80, GRADE_FLOOR = 5, YEAR_GOAL = 365;
+
+var BOOKS = {
+ "Genesis":[50,1533],"Exodus":[40,1213],"Leviticus":[27,859],"Numbers":[36,1288],
+ "Deuteronomy":[34,959],"Joshua":[24,658],"Judges":[21,618],"Ruth":[4,85],
+ "1 Samuel":[31,810],"2 Samuel":[24,695],"1 Kings":[22,816],"2 Kings":[25,719],
+ "1 Chronicles":[29,942],"2 Chronicles":[36,822],"Ezra":[10,280],"Nehemiah":[13,406],
+ "Esther":[10,167],"Job":[42,1070],"Psalms":[150,2461],"Proverbs":[31,915],
+ "Ecclesiastes":[12,222],"Song of Songs":[8,117],"Isaiah":[66,1292],"Jeremiah":[52,1364],
+ "Lamentations":[5,154],"Ezekiel":[48,1273],"Daniel":[12,357],"Hosea":[14,197],
+ "Joel":[3,73],"Amos":[9,146],"Obadiah":[1,21],"Jonah":[4,48],"Micah":[7,105],
+ "Nahum":[3,47],"Habakkuk":[3,56],"Zephaniah":[3,53],"Haggai":[2,38],
+ "Zechariah":[14,211],"Malachi":[4,55],"Matthew":[28,1071],"Mark":[16,678],
+ "Luke":[24,1151],"John":[21,879],"Acts":[28,1007],"Romans":[16,433],
+ "1 Corinthians":[16,437],"2 Corinthians":[13,257],"Galatians":[6,149],
+ "Ephesians":[6,155],"Philippians":[4,104],"Colossians":[4,95],
+ "1 Thessalonians":[5,89],"2 Thessalonians":[3,47],"1 Timothy":[6,113],
+ "2 Timothy":[4,83],"Titus":[3,46],"Philemon":[1,25],"Hebrews":[13,303],
+ "James":[5,108],"1 Peter":[5,105],"2 Peter":[3,61],"1 John":[5,105],
+ "2 John":[1,13],"3 John":[1,14],"Jude":[1,25],"Revelation":[22,404]
+};
+
+var LONG = {
+ "Psalms:119":176,"Psalms:78":72,"Psalms:89":52,"Numbers:7":89,"1 Kings:8":66,
+ "Genesis:24":67,"Matthew:26":75,"Luke:1":80,"Acts:7":60,"1 Chronicles:6":81,
+ "Ezekiel:16":63,"Jeremiah:51":64,"Deuteronomy:28":68,"Joshua:15":63,
+ "1 Samuel:17":58,"Exodus:12":51,"Job:38":41
+};
+
+var ORDER = [
+ ["1 Samuel",1,31],["2 Samuel",1,24],["Ruth",1,4],["Psalms",1,41],
+ ["Genesis",1,50],["Mark",1,16],["Exodus",1,40],["Proverbs",1,15],
+ ["1 Kings",1,22],["2 Kings",1,25],["Psalms",42,72],["Acts",1,28],
+ ["Leviticus",1,27],["Ecclesiastes",1,12],["Numbers",1,36],["Jonah",1,4],
+ ["Deuteronomy",1,34],["Psalms",73,89],["Joshua",1,24],["Judges",1,21],
+ ["John",1,21],["Job",1,42],["Song of Songs",1,8],["Isaiah",1,39],
+ ["Psalms",90,106],["Luke",1,24],["Isaiah",40,66],["Hosea",1,14],
+ ["Jeremiah",1,52],["Lamentations",1,5],["Romans",1,16],["Ezekiel",1,48],
+ ["Daniel",1,12],["Psalms",107,150],["Ezra",1,10],["Nehemiah",1,13],
+ ["Esther",1,10],["1 Chronicles",1,29],["2 Chronicles",1,36],["Proverbs",16,31],
+ ["Matthew",1,28],["Joel",1,3],["Amos",1,9],["Obadiah",1,1],["Micah",1,7],
+ ["Nahum",1,3],["Habakkuk",1,3],["Zephaniah",1,3],["Haggai",1,2],
+ ["Zechariah",1,14],["Malachi",1,4],["1 Corinthians",1,16],["2 Corinthians",1,13],
+ ["Galatians",1,6],["Ephesians",1,6],["Philippians",1,4],["Colossians",1,4],
+ ["1 Thessalonians",1,5],["2 Thessalonians",1,3],["1 Timothy",1,6],
+ ["2 Timothy",1,4],["Titus",1,3],["Philemon",1,1],["Hebrews",1,13],
+ ["James",1,5],["1 Peter",1,5],["2 Peter",1,3],["1 John",1,5],
+ ["2 John",1,1],["3 John",1,1],["Jude",1,1],["Revelation",1,22]
+];
+
+function buildPlan(){
+  var days=[];
+  ORDER.forEach(function(seg){
+    var name=seg[0], from=seg[1], to=seg[2];
+    var chapters=BOOKS[name][0], verses=BOOKS[name][1], avg=verses/chapters;
+    function vOf(c){ var k=name+":"+c; return LONG[k]!==undefined?LONG[k]:avg; }
+    var groups=[], c=from;
+    while(c<=to){
+      var start=c, v=vOf(c); c++;
+      while(c<=to && v+vOf(c)<=CEIL){ v+=vOf(c); c++; }
+      groups.push([start,c-1,v]);
+    }
+    if(groups.length>1 && groups[groups.length-1][2]<MINV){
+      var last=groups.pop(), prev=groups[groups.length-1];
+      if(prev[2]+last[2]<=CEIL+18){ prev[1]=last[1]; prev[2]+=last[2]; } else groups.push(last);
+    }
+    groups.forEach(function(g){
+      days.push({book:name,
+        read: g[0]===g[1] ? name+" "+g[0] : name+" "+g[0]+"\u2013"+g[1],
+        verses: Math.round(g[2]),
+        min: Math.max(1, Math.round(g[2]/VPM))});
+    });
+  });
+  return days.map(function(d,i){ d.day=i+1; return d; });
+}
+var PLAN = buildPlan();
+
+/* ---------- questions ---------- */
+var QUESTIONS = [
+  {id:"god",   prompt:"What does this say about who God is?"},
+  {id:"stood", prompt:"What stood out or confused me?"},
+  {id:"today", prompt:"What do I do with it today?"}
+];
+
+/* ---------- dates ---------- */
+function pad(n){ return String(n).padStart(2,"0"); }
+function keyOf(d){ d=d||new Date(); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function parseKey(k){ var p=k.split("-").map(Number); return {y:p[0],m:p[1],d:p[2]}; }
+function asDate(k){ var p=parseKey(k); return new Date(p.y,p.m-1,p.d); }
+function prettyDate(k){ return asDate(k).toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"}); }
+function shortDate(k){ return asDate(k).toLocaleDateString(undefined,{month:"short",day:"numeric"}); }
+function monthName(y,m){ return new Date(y,m-1,1).toLocaleDateString(undefined,{month:"long",year:"numeric"}); }
+function daysInMonth(y,m){ return new Date(y,m,0).getDate(); }
+
+var GRADES=[[96,"A+"],[93,"A"],[90,"A\u2212"],[87,"B+"],[83,"B"],[80,"B\u2212"],
+            [77,"C+"],[73,"C"],[70,"C\u2212"],[67,"D+"],[63,"D"],[60,"D\u2212"]];
+function gradeFor(p){ for(var i=0;i<GRADES.length;i++){ if(p>=GRADES[i][0]) return GRADES[i][1]; } return "F"; }
+
+/* ---------- storage ---------- */
+var LS_KEY = "bibleLog.v1";
+var state = { version:1, entries:{} };   // entries keyed by PLAN DAY number
+var page = "today";
+var viewDay = 1;
+var statusMsg = "";
+var statusErr = false;
+var saveTimer = null;
+
+function load(){
+  try {
+    var raw = localStorage.getItem(LS_KEY);
+    if(raw) state = JSON.parse(raw);
+    if(!state.entries) state.entries = {};
+  } catch(e){
+    statusMsg = "Couldn't read saved data from this browser."; statusErr = true;
+  }
+}
+function save(){
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    statusMsg = "Saved on this device"; statusErr = false;
+  } catch(e){
+    statusMsg = "Couldn't save \u2014 browser storage is full or blocked. Export your notes now.";
+    statusErr = true;
+  }
+  paintStatus();
+}
+
+function isComplete(e){
+  if(!e) return false;
+  return QUESTIONS.every(function(q){ return (e[q.id]||"").trim().length>0; });
+}
+function answered(e){
+  if(!e) return 0;
+  return QUESTIONS.filter(function(q){ return (e[q.id]||"").trim().length>0; }).length;
+}
+function loggedDays(){
+  return Object.keys(state.entries).map(Number).sort(function(a,b){return a-b;});
+}
+function nextUnloggedDay(){
+  var ds = loggedDays();
+  return ds.length ? Math.min(ds[ds.length-1]+1, PLAN.length) : 1;
+}
+
+/* ---------- scoring (by calendar date) ---------- */
+function dateMap(){
+  var m = {};
+  Object.keys(state.entries).forEach(function(k){
+    var e = state.entries[k];
+    if(!e.date) return;
+    var cur = m[e.date];
+    if(!cur || answered(e) > answered(cur)) m[e.date] = e;
+  });
+  return m;
+}
+function firstDate(){
+  var ds = Object.keys(dateMap()).sort();
+  return ds.length ? ds[0] : null;
+}
+function monthStats(y,m){
+  var start = firstDate(); if(!start) return null;
+  var dm = dateMap(), s = parseKey(start), now = parseKey(keyOf());
+  var first = (y===s.y && m===s.m) ? s.d : 1;
+  var last  = (y===now.y && m===now.m) ? now.d : daysInMonth(y,m);
+  var elapsed = last-first+1, complete=0, partial=0, marks={};
+  for(var d=first; d<=last; d++){
+    var e = dm[y+"-"+pad(m)+"-"+pad(d)];
+    if(isComplete(e)){ complete++; marks[d]="complete"; }
+    else if(e){ partial++; marks[d]="partial"; }
+    else marks[d]="missed";
+  }
+  return {y:y,m:m,first:first,last:last,elapsed:elapsed,complete:complete,partial:partial,
+          marks:marks, pct: elapsed>0 ? (complete/elapsed)*100 : 0};
+}
+function allMonths(){
+  var start = firstDate(); if(!start) return [];
+  var s = parseKey(start), now = parseKey(keyOf()), out=[], y=s.y, m=s.m;
+  while(y<now.y || (y===now.y && m<=now.m)){ out.push(monthStats(y,m)); m++; if(m>12){m=1;y++;} }
+  return out.reverse();
+}
+function weekStats(){
+  var start = firstDate(); if(!start) return null;
+  var dm = dateMap(), sd = asDate(start), now = parseKey(keyOf()), days=[];
+  for(var i=6;i>=0;i--){
+    var d = new Date(now.y, now.m-1, now.d-i);
+    if(d < sd) continue;
+    var k = keyOf(d), e = dm[k];
+    days.push({k:k, state: isComplete(e) ? "complete" : (e ? "partial" : "missed")});
+  }
+  var complete = days.filter(function(x){return x.state==="complete";}).length;
+  return {days:days, complete:complete, elapsed:days.length,
+          pct: days.length ? (complete/days.length)*100 : 0};
+}
+
+/* ---------- export / import ---------- */
+function toMarkdown(){
+  var lines = ["# Bible reading log",""];
+  loggedDays().forEach(function(n){
+    var e = state.entries[n], p = PLAN[n-1];
+    lines.push("## Day "+n+" \u2014 "+p.read+(e.date ? " \u2014 "+prettyDate(e.date) : ""), "");
+    QUESTIONS.forEach(function(q){
+      if((e[q.id]||"").trim()) lines.push("**"+q.prompt+"**","",e[q.id].trim(),"");
+    });
+  });
+  return lines.join("\n");
+}
+function download(text, filename, type){
+  var url = URL.createObjectURL(new Blob([text],{type:type}));
+  var a = document.createElement("a");
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+  document.body.removeChild(a); setTimeout(function(){ URL.revokeObjectURL(url); },1000);
+}
+function importFile(file){
+  var r = new FileReader();
+  r.onload = function(){
+    try {
+      var incoming = JSON.parse(r.result);
+      if(!incoming.entries) throw new Error("no entries");
+      Object.keys(incoming.entries).forEach(function(k){
+        var mine = state.entries[k], theirs = incoming.entries[k];
+        if(!mine || answered(theirs) > answered(mine)) state.entries[k] = theirs;
+      });
+      save(); render();
+    } catch(e){
+      statusMsg = "That file didn't look like a backup from this app."; statusErr = true; paintStatus();
+    }
+  };
+  r.readAsText(file);
+}
+
+/* ---------- render ---------- */
+function el(html){ var t=document.createElement("template"); t.innerHTML=html.trim(); return t.content.firstChild; }
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+
+function paintStatus(){
+  var n = document.getElementById("status");
+  if(n){ n.textContent = statusMsg; n.className = "status" + (statusErr ? " err" : ""); }
+}
+
+function render(){
+  var app = document.getElementById("app");
+  var plan = PLAN[viewDay-1];
+  var entry = state.entries[viewDay] || {};
+  var html = "";
+
+  html += '<div class="head"><div><div class="eyebrow">Reading log</div>'+
+          '<h1>'+esc(plan.book)+'</h1></div>'+
+          '<div class="count"><b>'+viewDay+'</b><span>of '+PLAN.length+'</span></div></div>';
+
+  html += '<nav><button data-page="today" class="'+(page==="today"?"on":"")+'">Today</button>'+
+          '<button data-page="record" class="'+(page==="record"?"on":"")+'">Record</button></nav>';
+
+  if(page === "today"){
+    var isNext = viewDay === nextUnloggedDay();
+    html += '<section class="card"><div class="top"><div>'+
+            '<div class="date">'+(entry.date ? esc(prettyDate(entry.date)) : esc(prettyDate(keyOf())))+'</div>'+
+            (isNext ? '' : '<button class="link" id="jumpNext">Go to next unread</button>')+
+            '</div><div class="stepper">'+
+            '<button id="prev"'+(viewDay<=1?" disabled":"")+' aria-label="Previous day">\u2212</button>'+
+            '<span>Day '+viewDay+'</span>'+
+            '<button id="next"'+(viewDay>=PLAN.length?" disabled":"")+' aria-label="Next day">+</button>'+
+            '</div></div>';
+
+    html += '<div class="assign"><div class="ref">'+esc(plan.read)+'</div>'+
+            '<div class="meta">~'+plan.verses+' verses \u00b7 about '+plan.min+' minutes</div></div>';
+
+    QUESTIONS.forEach(function(q){
+      html += '<div class="field"><label for="'+q.id+'">'+esc(q.prompt)+'</label>'+
+              '<textarea id="'+q.id+'" data-q="'+q.id+'" placeholder="\u2014">'+esc(entry[q.id]||"")+'</textarea></div>';
+    });
+
+    var n = answered(entry);
+    html += '<div class="cardfoot"><div id="status" class="status'+(statusErr?" err":"")+'">'+
+            esc(statusMsg || (n ? "Saved on this device" : "Nothing written yet"))+'</div>'+
+            '<div class="pill'+(n===3?" on":"")+'">'+n+'/3</div></div></section>';
+
+    var ds = loggedDays().reverse().slice(0,14);
+    if(ds.length){
+      html += '<section style="margin-top:20px"><div class="sechead"><span>Recent</span></div>';
+      ds.forEach(function(num){
+        var e = state.entries[num];
+        html += '<button class="row" data-goto="'+num+'">'+
+                '<span class="d">'+(e.date?esc(shortDate(e.date)):"Day "+num)+'</span>'+
+                '<span class="r">'+esc(PLAN[num-1].read)+'</span>'+
+                '<span class="m'+(isComplete(e)?" on":"")+'">'+(isComplete(e)?"3/3":answered(e)+"/3")+'</span></button>';
+      });
+      html += '</section>';
+    }
+
+    html += '<div class="actions">'+
+            '<button id="expMd">Download notes</button>'+
+            '<button id="expJson">Download backup</button>'+
+            '<button id="imp" class="quiet">Restore backup</button></div>'+
+            '<p class="foot">Saved in this browser on this device. Download a backup now and then, '+
+            'and use Restore to move it to another phone or laptop.</p>';
+  }
+
+  if(page === "record"){
+    var months = allMonths();
+    if(!months.length){
+      html += '<section class="card" style="color:var(--muted);font-size:14px;line-height:1.5">'+
+              'Nothing scored yet. Answer all three questions on a day and it starts counting.</section>';
+    } else {
+      var tm = months[0], wk = weekStats();
+      var dm = dateMap();
+      var totalComplete = Object.keys(dm).filter(function(k){ return isComplete(dm[k]); }).length;
+      var start = firstDate();
+      var totalElapsed = Math.round((asDate(keyOf()) - asDate(start))/86400000) + 1;
+      var short = Math.ceil((MONTH_TARGET/100)*tm.elapsed - tm.complete);
+
+      html += '<section class="card"><div class="eyebrow">'+esc(monthName(tm.y,tm.m))+'</div>'+
+              '<div class="big"><div class="pct">'+tm.pct.toFixed(1)+'%</div>'+
+              '<div class="grade'+(tm.elapsed<GRADE_FLOOR?" off":"")+'">'+
+              (tm.elapsed<GRADE_FLOOR ? "\u2014" : gradeFor(tm.pct))+'</div></div>'+
+              '<div class="sub">'+tm.complete+' of '+tm.elapsed+' days with all three answered'+
+              (tm.partial ? ' \u00b7 '+tm.partial+' partial' : '')+'</div>'+
+              '<div class="bar"><i style="width:'+Math.min(100,tm.pct)+'%"></i>'+
+              '<u style="left:'+MONTH_TARGET+'%"></u></div>'+
+              '<div class="verdict'+(tm.pct>=MONTH_TARGET?" on":"")+'">'+
+              (tm.elapsed<GRADE_FLOOR ? "Too early to call \u2014 target is "+MONTH_TARGET+"%"
+               : tm.pct>=MONTH_TARGET ? "Above your "+MONTH_TARGET+"% target"
+               : short+" day"+(short===1?"":"s")+" short of "+MONTH_TARGET+"%")+'</div>';
+
+      html += '<div class="mgrid">';
+      for(var d=1; d<=daysInMonth(tm.y,tm.m); d++){
+        var inR = d>=tm.first && d<=tm.last;
+        html += '<span class="'+(inR?tm.marks[d]:"out")+'">'+d+'</span>';
+      }
+      html += '</div><div class="legend">'+
+              '<span><i class="sw c"></i>All three</span>'+
+              '<span><i class="sw p"></i>Partial</span>'+
+              '<span><i class="sw"></i>Missed</span></div></section>';
+
+      html += '<section class="card"><div class="sechead"><span>Last 7 days</span></div>'+
+              '<div class="weekrow"><div class="dots">';
+      wk.days.forEach(function(x){ html += '<i class="'+x.state+'" title="'+esc(shortDate(x.k))+'"></i>'; });
+      html += '</div><div class="wnum">'+wk.complete+'/'+wk.elapsed+
+              '<small class="'+(wk.pct>=WEEK_TARGET?"on":"")+'">'+wk.pct.toFixed(0)+'%</small></div></div>'+
+              '<div class="note">Rolling seven days, not Sunday-to-Saturday. '+
+              'At '+WEEK_TARGET+'%, six of seven passes and five fails.</div></section>';
+
+      html += '<section class="card"><div class="sechead"><span>All time</span></div>'+
+              '<div class="totals">'+
+              '<div><b>'+totalComplete+'</b><span>days kept</span></div>'+
+              '<div><b>'+totalElapsed+'</b><span>since '+esc(shortDate(start))+'</span></div>'+
+              '<div><b>'+((totalComplete/totalElapsed)*100).toFixed(1)+'%</b><span>overall</span></div>'+
+              '</div><div class="bar" style="margin-top:16px">'+
+              '<i style="width:'+Math.min(100,(totalComplete/YEAR_GOAL)*100)+'%"></i></div>'+
+              '<div class="sub">'+totalComplete+' of '+YEAR_GOAL+' days toward the year</div></section>';
+
+      if(months.length > 1){
+        html += '<section style="margin-top:20px"><div class="sechead"><span>By month</span></div>';
+        months.forEach(function(ms){
+          html += '<div class="mrow"><span class="n">'+esc(monthName(ms.y,ms.m))+'</span>'+
+                  '<span class="f">'+ms.complete+'/'+ms.elapsed+'</span>'+
+                  '<span class="p'+(ms.pct>=MONTH_TARGET?" on":"")+'">'+ms.pct.toFixed(1)+'%</span>'+
+                  '<span class="g">'+(ms.elapsed<GRADE_FLOOR?"\u2014":gradeFor(ms.pct))+'</span></div>';
+        });
+        html += '</section>';
+      }
+    }
+  }
+
+  app.innerHTML = html;
+  wire();
+}
+
+function wire(){
+  document.querySelectorAll("nav button").forEach(function(b){
+    b.onclick = function(){ page = b.dataset.page; statusMsg=""; render(); };
+  });
+  var prev = document.getElementById("prev");
+  var next = document.getElementById("next");
+  if(prev) prev.onclick = function(){ flush(); viewDay = Math.max(1, viewDay-1); statusMsg=""; render(); };
+  if(next) next.onclick = function(){ flush(); viewDay = Math.min(PLAN.length, viewDay+1); statusMsg=""; render(); };
+  var jn = document.getElementById("jumpNext");
+  if(jn) jn.onclick = function(){ flush(); viewDay = nextUnloggedDay(); statusMsg=""; render(); };
+
+  document.querySelectorAll("[data-goto]").forEach(function(b){
+    b.onclick = function(){ flush(); viewDay = Number(b.dataset.goto); statusMsg=""; render(); };
+  });
+
+  document.querySelectorAll("textarea[data-q]").forEach(function(t){
+    t.oninput = function(){
+      statusMsg = "Saving\u2026"; statusErr = false; paintStatus();
+      if(saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(function(){ writeDraft(); }, 700);
+    };
+    t.onblur = function(){ if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; } writeDraft(); };
+  });
+
+  var em = document.getElementById("expMd");
+  if(em) em.onclick = function(){ download(toMarkdown(), "bible-log.md", "text/markdown"); };
+  var ej = document.getElementById("expJson");
+  if(ej) ej.onclick = function(){ download(JSON.stringify(state,null,2), "bible-log-backup.json", "application/json"); };
+  var im = document.getElementById("imp");
+  if(im) im.onclick = function(){ document.getElementById("importer").click(); };
+}
+
+function writeDraft(){
+  var e = state.entries[viewDay] || { day: viewDay, date: keyOf() };
+  var any = false;
+  QUESTIONS.forEach(function(q){
+    var node = document.querySelector('textarea[data-q="'+q.id+'"]');
+    if(!node) return;
+    e[q.id] = node.value;
+    if(node.value.trim()) any = true;
+  });
+  if(any){
+    if(!e.date) e.date = keyOf();
+    e.savedAt = new Date().toISOString();
+    state.entries[viewDay] = e;
+  } else {
+    delete state.entries[viewDay];
+  }
+  save();
+  var pill = document.querySelector(".pill");
+  if(pill){
+    var n = answered(state.entries[viewDay]);
+    pill.textContent = n + "/3";
+    pill.className = "pill" + (n===3 ? " on" : "");
+  }
+}
+
+function flush(){
+  if(saveTimer){ clearTimeout(saveTimer); saveTimer = null; }
+  if(document.querySelector("textarea[data-q]")) writeDraft();
+}
+
+document.getElementById("importer").onchange = function(ev){
+  if(ev.target.files && ev.target.files[0]) importFile(ev.target.files[0]);
+  ev.target.value = "";
+};
+window.addEventListener("beforeunload", flush);
+document.addEventListener("visibilitychange", function(){ if(document.hidden) flush(); });
+
+load();
+viewDay = nextUnloggedDay();
+render();
+</script>
+</body>
+</html>
