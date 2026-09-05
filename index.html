@@ -6,6 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#10151a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
 <title>Reading Log</title>
 <style>
 :root{--ink:#10151a;--raised:#182028;--line:#2a3441;--parchment:#e6ebef;--muted:#8b98a5;--brass:#89b7d6;--rust:#c05c56;
@@ -125,6 +127,9 @@ textarea::placeholder{color:var(--ghost)}
 .actions button.quiet{border-color:var(--line);color:var(--muted)}
 .foot{font-size:11px;color:var(--muted);line-height:1.5;margin:12px 2px 0}
 .hidden{display:none}
+.tok{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:8px;color:var(--parchment);
+ font-size:14px;padding:10px 11px;margin-top:4px}
+.tok:focus{outline:2px solid var(--brass);outline-offset:1px;border-color:transparent}
 .themes{position:fixed;right:14px;top:76px;width:176px;background:var(--raised);border:1px solid var(--line);
  border-radius:10px;padding:10px;z-index:50;max-height:calc(100vh - 100px);overflow-y:auto}
 .themes h3{margin:0 0 8px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
@@ -413,6 +418,72 @@ function buildThemePanel(){
   openGroup((THEMES[saved] || THEMES[0]).group);
 }
 
+/* ---------- sync (private GitHub repo) ---------- */
+var SYNC_REPO = "matthewsb419/dailybiblereading-data";
+var SYNC_URL = "https://api.github.com/repos/"+SYNC_REPO+"/contents/data.json";
+var TOKEN_KEY = "bibleLog.ghtoken";
+var syncSha = null, pushTimer = null, syncOpen = false, syncBusy = false;
+
+function ghToken(){ try { return localStorage.getItem(TOKEN_KEY) || ""; } catch(e){ return ""; } }
+function b64enc(s){ return btoa(unescape(encodeURIComponent(s))); }
+function b64dec(s){ return decodeURIComponent(escape(atob(String(s).replace(/\n/g,"")))); }
+function setSyncStatus(msg, err){ statusMsg = msg; statusErr = !!err; paintStatus(); }
+
+function mergeRemote(remote){
+  // per entry, the most recently edited copy wins
+  var changed = false;
+  if(remote && remote.entries){
+    Object.keys(remote.entries).forEach(function(k){
+      var mine = state.entries[k], theirs = remote.entries[k];
+      if(!mine || (theirs.savedAt||"") > (mine.savedAt||"")){ state.entries[k] = theirs; changed = true; }
+    });
+  }
+  return changed;
+}
+
+function syncNow(manual){
+  if(!ghToken() || syncBusy || typeof fetch === "undefined") return;
+  syncBusy = true;
+  if(manual) setSyncStatus("Syncing…");
+  var hdrs = {Authorization:"Bearer "+ghToken(), Accept:"application/vnd.github+json"};
+  fetch(SYNC_URL, {headers:hdrs})
+  .then(function(r){
+    if(r.status === 404){ syncSha = null; return null; }
+    if(r.status === 401 || r.status === 403) throw new Error("token rejected — check or renew it");
+    if(!r.ok) throw new Error("pull failed ("+r.status+")");
+    return r.json();
+  })
+  .then(function(j){
+    var remoteText = "";
+    if(j){
+      syncSha = j.sha;
+      remoteText = b64dec(j.content);
+      var changed = false;
+      try { changed = mergeRemote(JSON.parse(remoteText)); } catch(e){}
+      if(changed){ save(); render(); }
+    }
+    var localText = JSON.stringify(state);
+    if(localText === remoteText){ syncBusy = false; setSyncStatus("Synced"); return null; }
+    var body = {message:"sync "+new Date().toISOString(), content:b64enc(localText)};
+    if(syncSha) body.sha = syncSha;
+    return fetch(SYNC_URL, {method:"PUT", headers:hdrs, body:JSON.stringify(body)})
+      .then(function(r){
+        if(r.status === 409 || r.status === 422){ syncBusy = false; syncSha = null; syncNow(manual); return null; }
+        if(!r.ok) throw new Error("push failed ("+r.status+")");
+        return r.json();
+      })
+      .then(function(j2){
+        if(j2){ if(j2.content) syncSha = j2.content.sha; syncBusy = false; setSyncStatus("Synced"); }
+      });
+  })
+  .catch(function(e){ syncBusy = false; setSyncStatus("Sync: "+e.message, true); });
+}
+function schedulePush(){
+  if(!ghToken()) return;
+  if(pushTimer) clearTimeout(pushTimer);
+  pushTimer = setTimeout(function(){ pushTimer = null; syncNow(false); }, 2500);
+}
+
 /* ---------- gate ---------- */
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
@@ -422,7 +493,9 @@ function gateHash(s){
   return h.toString(36);
 }
 function isUnlocked(){
-  try { return localStorage.getItem(GATE_KEY) === GATE_HASH; } catch(e){ return false; }
+  // session-only: the password is asked on every fresh launch
+  try { localStorage.removeItem(GATE_KEY); } catch(e){}
+  try { return sessionStorage.getItem(GATE_KEY) === GATE_HASH; } catch(e){ return false; }
 }
 
 /* ---------- trackers ---------- */
@@ -481,6 +554,7 @@ function save(){
     statusErr = true;
   }
   paintStatus();
+  if(!syncBusy) schedulePush();
 }
 
 function isComplete(e){
@@ -705,9 +779,26 @@ function render(){
     html += '<div class="actions">'+
             '<button id="expMd">Download notes</button>'+
             '<button id="expJson">Download backup</button>'+
-            '<button id="imp" class="quiet">Restore backup</button></div>'+
-            '<p class="foot">Saved in this browser on this device. Download a backup now and then, '+
-            'and use Restore to move it to another phone or laptop.</p>';
+            '<button id="imp" class="quiet">Restore backup</button>'+
+            '<button id="syncBtn" class="quiet">'+(ghToken() ? "Sync now" : "Set up sync")+'</button></div>';
+
+    if(syncOpen){
+      html += '<section class="card" style="margin-top:14px"><div class="sechead"><span>Sync</span></div>'+
+              '<label for="ghtok">Paste a fine-grained GitHub token with Contents read &amp; write on '+
+              esc(SYNC_REPO)+'. It is stored only on this device.</label>'+
+              '<input type="password" id="ghtok" class="tok" autocomplete="off" placeholder="'+
+              (ghToken() ? "Token saved — paste a new one to replace it" : "github_pat_…")+'">'+
+              '<div class="actions" style="margin-top:12px">'+
+              '<button id="ghSave">Save token</button>'+
+              (ghToken() ? '<button id="ghDel" class="quiet">Remove token</button>' : '')+
+              '<button id="ghClose" class="quiet">Close</button></div></section>';
+    }
+
+    html += '<p class="foot">'+
+            (ghToken() ? 'Syncing with a private GitHub repo — your other devices pick up changes when they open the app. '
+                       : 'Saved in this browser on this device. Set up sync to share entries with your phone. ')+
+            'Backups still work anytime.'+
+            (ghToken() ? ' <button class="link" id="syncCfg">Sync settings</button>' : '')+'</p>';
   }
 
   if(page === "record"){
@@ -886,6 +977,28 @@ function wire(){
     };
   });
 
+  var sb = document.getElementById("syncBtn");
+  if(sb) sb.onclick = function(){
+    if(ghToken()){ syncNow(true); } else { syncOpen = true; render(); }
+  };
+  var sc = document.getElementById("syncCfg");
+  if(sc) sc.onclick = function(){ syncOpen = true; render(); };
+  var gs = document.getElementById("ghSave");
+  if(gs) gs.onclick = function(){
+    var v = document.getElementById("ghtok").value.trim();
+    if(v){
+      try { localStorage.setItem(TOKEN_KEY, v); } catch(e){}
+      syncOpen = false; render(); syncNow(true);
+    }
+  };
+  var gd = document.getElementById("ghDel");
+  if(gd) gd.onclick = function(){
+    try { localStorage.removeItem(TOKEN_KEY); } catch(e){}
+    syncOpen = false; render();
+  };
+  var gc = document.getElementById("ghClose");
+  if(gc) gc.onclick = function(){ syncOpen = false; render(); };
+
   var em = document.getElementById("expMd");
   if(em) em.onclick = function(){ download(toMarkdown(), "bible-log.md", "text/markdown"); };
   var ej = document.getElementById("expJson");
@@ -934,12 +1047,18 @@ document.getElementById("importer").onchange = function(ev){
   ev.target.value = "";
 };
 window.addEventListener("beforeunload", flush);
-document.addEventListener("visibilitychange", function(){ if(document.hidden) flush(); });
+document.addEventListener("visibilitychange", function(){
+  if(document.hidden){
+    flush();
+    if(pushTimer){ clearTimeout(pushTimer); pushTimer = null; syncNow(false); }
+  }
+});
 
 function boot(){
   load();
   viewDay = nextUnloggedDay();
   render();
+  syncNow(false);
 }
 
 function renderLock(){
@@ -955,7 +1074,7 @@ function renderLock(){
   var input = document.getElementById("gate");
   function attempt(){
     if(gateHash(input.value) === GATE_HASH){
-      try { localStorage.setItem(GATE_KEY, GATE_HASH); } catch(e){}
+      try { sessionStorage.setItem(GATE_KEY, GATE_HASH); } catch(e){}
       boot();
     } else {
       document.getElementById("gateMsg").textContent = "That's not it.";
