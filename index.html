@@ -20,6 +20,7 @@ body{margin:0;background:var(--ink);color:var(--parchment);
  -webkit-font-smoothing:antialiased;padding:env(safe-area-inset-top) 0 0 0}
 #app{max-width:620px;margin:0 auto;padding:22px 18px 48px}
 .serif{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif}
+a{color:var(--brass)}
 .head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;gap:12px}
 .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
 h1{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:30px;font-weight:600;margin:0;line-height:1.05}
@@ -423,7 +424,7 @@ var SYNC_REPO = "matthewsb419/dailybiblereading-data";
 var SYNC_URL = "https://api.github.com/repos/"+SYNC_REPO+"/contents/data.json";
 var TOKEN_KEY = "bibleLog.ghtoken";
 var TOKEN_EXPIRES = "2026-12-04"; // update this date whenever a new token is created
-var syncSha = null, pushTimer = null, syncOpen = false, syncBusy = false;
+var syncSha = null, pushTimer = null, syncOpen = false, syncBusy = false, syncHelpOpen = false;
 
 function ghToken(){ try { return localStorage.getItem(TOKEN_KEY) || ""; } catch(e){ return ""; } }
 function b64enc(s){ return btoa(unescape(encodeURIComponent(s))); }
@@ -793,21 +794,43 @@ function render(){
               (ghToken() ? "Token saved — paste a new one to replace it" : "github_pat_…")+'">'+
               '<div class="actions" style="margin-top:12px">'+
               '<button id="ghSave">Save token</button>'+
+              '<button id="ghHelp" class="quiet">'+(syncHelpOpen?"Hide instructions":"How to make a token")+'</button>'+
               (ghToken() ? '<button id="ghDel" class="quiet">Remove token</button>' : '')+
-              '<button id="ghClose" class="quiet">Close</button></div></section>';
+              '<button id="ghClose" class="quiet">Close</button></div>';
+      if(syncHelpOpen){
+        html += '<div class="note" style="margin-top:14px"><b style="color:var(--parchment)">Making a new sync token</b>'+
+          '<ol style="margin:8px 0 0;padding-left:18px;line-height:1.7">'+
+          '<li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">'+
+          'github.com/settings/personal-access-tokens/new</a> and sign in if asked. (Long way: github.com &rarr; '+
+          'your avatar &rarr; Settings &rarr; Developer settings at the bottom left &rarr; Personal access tokens '+
+          '&rarr; Fine-grained tokens &rarr; Generate new token.)</li>'+
+          '<li>Token name: <b>bible-log-sync</b>. Expiration: the longest offered &mdash; note the date.</li>'+
+          '<li>Repository access: choose <b>Only select repositories</b>, then pick <b>dailybiblereading-data</b> '+
+          'in the dropdown. It should say &ldquo;1 repository selected.&rdquo;</li>'+
+          '<li>Scroll down &mdash; a <b>Repository permissions</b> list appears only after step 3. '+
+          'Set <b>Contents</b> to <b>Read and write</b>. Touch nothing else.</li>'+
+          '<li>Check the summary above the button: <b>2 permissions &mdash; Contents (read and write), '+
+          'Metadata (read)</b>. Metadata adds itself; that is normal.</li>'+
+          '<li>Generate the token and copy the <b>github_pat_&hellip;</b> value right away &mdash; '+
+          'GitHub shows it only this once.</li>'+
+          '<li>Paste it in the box above and press Save token. Do the same paste on each device '+
+          '(one token works everywhere).</li></ol>'+
+          '<div style="margin-top:8px">If the old token expired, delete it on that same GitHub page &mdash; '+
+          'nothing in the app breaks; entries just pause syncing until the new token is saved.</div></div>';
+      }
+      html += '</section>';
     }
 
     if(ghToken()){
       var expLeft = Math.round((asDate(TOKEN_EXPIRES) - asDate(keyOf()))/86400000);
       if(expLeft < 0){
         html += '<p class="foot" style="color:var(--rust)">Your sync token expired on '+
-                esc(shortDate(TOKEN_EXPIRES))+' — sync is paused. Create a new fine-grained token '+
-                '(github.com &rarr; Settings &rarr; Developer settings) with Contents read &amp; write on the data '+
-                'repo, then paste it in Sync settings.</p>';
+                esc(shortDate(TOKEN_EXPIRES))+' — sync is paused. Open Sync settings and press '+
+                '&ldquo;How to make a token&rdquo; for step-by-step instructions.</p>';
       } else if(expLeft <= 21){
         html += '<p class="foot" style="color:var(--rust)">Heads up: your sync token expires '+
                 esc(shortDate(TOKEN_EXPIRES))+' ('+expLeft+' day'+(expLeft===1?"":"s")+' left). '+
-                'Create a new one and paste it into Sync settings on each device.</p>';
+                'Open Sync settings &rarr; &ldquo;How to make a token&rdquo; for the step-by-step guide.</p>';
       }
     }
     html += '<p class="foot">'+
@@ -1007,13 +1030,15 @@ function wire(){
       syncOpen = false; render(); syncNow(true);
     }
   };
+  var gh = document.getElementById("ghHelp");
+  if(gh) gh.onclick = function(){ syncHelpOpen = !syncHelpOpen; render(); };
   var gd = document.getElementById("ghDel");
   if(gd) gd.onclick = function(){
     try { localStorage.removeItem(TOKEN_KEY); } catch(e){}
     syncOpen = false; render();
   };
   var gc = document.getElementById("ghClose");
-  if(gc) gc.onclick = function(){ syncOpen = false; render(); };
+  if(gc) gc.onclick = function(){ syncOpen = false; syncHelpOpen = false; render(); };
 
   var em = document.getElementById("expMd");
   if(em) em.onclick = function(){ download(toMarkdown(), "bible-log.md", "text/markdown"); };
