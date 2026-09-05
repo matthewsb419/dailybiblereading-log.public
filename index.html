@@ -8,7 +8,10 @@
 <meta name="theme-color" content="#10151a">
 <title>Reading Log</title>
 <style>
-:root{--ink:#10151a;--raised:#182028;--line:#2a3441;--parchment:#e6ebef;--muted:#8b98a5;--brass:#89b7d6;--rust:#c05c56}
+:root{--ink:#10151a;--raised:#182028;--line:#2a3441;--parchment:#e6ebef;--muted:#8b98a5;--brass:#89b7d6;--rust:#c05c56;
+ --ghost:#475462;--daynum:#4d5a67;--outnum:#232b33;--rustdeep:#8c3530;
+ --pipline:rgba(230,235,239,.2);--piptext:rgba(230,235,239,.3);
+ --pipinvline:rgba(16,21,26,.35);--pipinvtext:rgba(16,21,26,.45)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--ink);color:var(--parchment);
  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
@@ -43,7 +46,7 @@ textarea{width:100%;background:var(--ink);border:1px solid var(--line);border-ra
  font-size:16px;line-height:1.5;padding:10px 11px;resize:vertical;min-height:76px;
  font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif}
 textarea:focus{outline:2px solid var(--brass);outline-offset:1px;border-color:transparent}
-textarea::placeholder{color:#475462}
+textarea::placeholder{color:var(--ghost)}
 .cardfoot{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .status{font-size:12px;color:var(--muted);min-height:16px;line-height:1.4}
 .status.err{color:var(--rust)}
@@ -64,10 +67,10 @@ textarea::placeholder{color:#475462}
 .verdict.on{color:var(--brass)}
 .mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:18px 0 12px}
 .mgrid>span{aspect-ratio:1;border-radius:5px;font-size:11px;display:flex;align-items:center;justify-content:center;
- font-variant-numeric:tabular-nums;border:1px solid var(--line);color:#4d5a67;position:relative;padding-bottom:9px}
+ font-variant-numeric:tabular-nums;border:1px solid var(--line);color:var(--daynum);position:relative;padding-bottom:9px}
 .mgrid>span.complete{background:var(--brass);border-color:var(--brass);color:var(--ink);font-weight:600}
 .mgrid>span.partial{border-color:var(--brass);color:var(--brass)}
-.mgrid>span.out{border-color:transparent;color:#232b33;padding-bottom:0}
+.mgrid>span.out{border-color:transparent;color:var(--outnum);padding-bottom:0}
 .mgrid>span.blank{border-color:transparent;padding-bottom:0}
 .mgrid.dowrow{margin:16px 0 0}
 .mgrid.cal{margin-top:6px}
@@ -80,12 +83,12 @@ textarea::placeholder{color:#475462}
 .pips{position:absolute;bottom:3px;left:0;right:0;display:flex;justify-content:center;gap:3px}
 .pip{width:11px;height:11px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;
  font-size:7px;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
- border:1px solid rgba(230,235,239,.2);color:rgba(230,235,239,.3)}
+ border:1px solid var(--pipline);color:var(--piptext)}
 .pip.ok{background:var(--brass);border-color:var(--brass);color:var(--ink)}
 .pip.no{background:var(--rust);border-color:var(--rust);color:var(--parchment)}
-.mgrid>span.complete .pip{border-color:rgba(16,21,26,.35);color:rgba(16,21,26,.45)}
+.mgrid>span.complete .pip{border-color:var(--pipinvline);color:var(--pipinvtext)}
 .mgrid>span.complete .pip.ok{background:var(--ink);border-color:var(--ink);color:var(--brass)}
-.mgrid>span.complete .pip.no{background:#8c3530;border-color:#8c3530;color:var(--parchment)}
+.mgrid>span.complete .pip.no{background:var(--rustdeep);border-color:var(--rustdeep);color:var(--parchment)}
 .legend{display:flex;gap:14px;font-size:11px;color:var(--muted);flex-wrap:wrap}
 .legend span{display:flex;align-items:center;gap:5px}
 .sw{width:10px;height:10px;border-radius:3px;border:1px solid var(--line);display:inline-block}
@@ -122,6 +125,22 @@ textarea::placeholder{color:#475462}
 .actions button.quiet{border-color:var(--line);color:var(--muted)}
 .foot{font-size:11px;color:var(--muted);line-height:1.5;margin:12px 2px 0}
 .hidden{display:none}
+.themes{position:fixed;right:14px;top:76px;width:176px;background:var(--raised);border:1px solid var(--line);
+ border-radius:10px;padding:10px;z-index:50;max-height:calc(100vh - 100px);overflow-y:auto}
+.themes h3{margin:0 0 8px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+ font-weight:600;display:flex;justify-content:space-between;align-items:baseline}
+.themes h3 span{cursor:pointer;text-decoration:underline;font-weight:400;letter-spacing:0;text-transform:none}
+.throw{display:flex;align-items:center;gap:8px;width:100%;border:1px solid transparent;border-radius:7px;
+ padding:7px 8px;cursor:pointer;font-size:12px;text-align:left;margin-bottom:4px}
+.throw.on{box-shadow:0 0 0 2px var(--brass)}
+.thsw{display:flex;gap:3px;flex:none}
+.thsw i{width:12px;height:12px;border-radius:4px;display:block}
+.themes.min .throw{display:none}
+@media (max-width:1080px){
+ .themes{left:12px;right:12px;top:auto;bottom:12px;width:auto;display:flex;flex-wrap:wrap;gap:4px;max-height:36vh}
+ .themes h3{width:100%;margin-bottom:4px}
+ .throw{width:auto;flex:1 1 40%;margin-bottom:0}
+}
 .lock{min-height:76vh;display:flex;align-items:center;justify-content:center}
 .lockcard{width:100%;max-width:300px;text-align:center}
 .lockcard h1{margin-bottom:22px}
@@ -133,12 +152,12 @@ textarea::placeholder{color:#475462}
 .lockmsg{font-size:12px;color:var(--rust);min-height:16px;margin-top:10px}
 .pmwrap{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
  margin:2px 0 14px;padding:12px 2px 0;border-top:1px solid var(--line)}
-.pmhead{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#475462}
+.pmhead{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ghost)}
 .pmset{display:flex;gap:16px;align-items:center}
 .pmitem{display:flex;align-items:center;gap:7px}
 .pmlab{font-size:12px;color:var(--muted)}
 .seg{display:flex;border:1px solid var(--line);border-radius:16px;overflow:hidden}
-.seg button{background:transparent;border:none;color:#475462;font-size:12px;padding:5px 13px;cursor:pointer;
+.seg button{background:transparent;border:none;color:var(--ghost);font-size:12px;padding:5px 13px;cursor:pointer;
  letter-spacing:.03em;transition:background .15s,color .15s}
 .seg button+button{border-left:1px solid var(--line)}
 .seg button.sel{font-weight:600}
@@ -254,6 +273,76 @@ function buildPlan(){
   return days.map(function(d,i){ d.day=i+1; return d; });
 }
 var PLAN = buildPlan();
+
+/* ---------- themes (temporary picker) ---------- */
+var THEME_KEY = "bibleLog.themePick";
+var THEMES = [
+ {name:"Slate & Ice",  ink:"#10151a", raised:"#182028", line:"#2a3441", parchment:"#e6ebef", muted:"#8b98a5", brass:"#89b7d6", rust:"#c05c56"},
+ {name:"Violet Night", ink:"#131318", raised:"#1b1b23", line:"#2f2f3c", parchment:"#e9e8f0", muted:"#9795a8", brass:"#a78bfa", rust:"#d16060"},
+ {name:"Sea Glass",    ink:"#0e1517", raised:"#152022", line:"#25373a", parchment:"#e2eeec", muted:"#87a09d", brass:"#66c7b4", rust:"#cf6660"},
+ {name:"Monochrome",   ink:"#111214", raised:"#1a1c1f", line:"#2d3035", parchment:"#ececec", muted:"#93979c", brass:"#e2e2e2", rust:"#d95f5f"},
+ {name:"Deep Ocean",   ink:"#0b1220", raised:"#121b2e", line:"#233252", parchment:"#e3e9f5", muted:"#8593ad", brass:"#7fa8e8", rust:"#d4636b"},
+ {name:"Rose Quartz",  ink:"#171218", raised:"#211824", line:"#382b3c", parchment:"#efe7ee", muted:"#a292a4", brass:"#d494b9", rust:"#cf5454"},
+ {name:"Evergreen",    ink:"#0f1512", raised:"#16211b", line:"#28382f", parchment:"#e6ede8", muted:"#8ca396", brass:"#85c29b", rust:"#cf6a55"},
+ {name:"Nord",         ink:"#242933", raised:"#2e3440", line:"#434c5e", parchment:"#eceff4", muted:"#96a1b8", brass:"#88c0d0", rust:"#bf616a"},
+ {name:"Indigo Dusk",  ink:"#12131f", raised:"#1a1c2c", line:"#2e3150", parchment:"#e7e8f4", muted:"#9094b3", brass:"#96a6f5", rust:"#d4607e"},
+ {name:"Terminal",     ink:"#0c1114", raised:"#121a1f", line:"#23323a", parchment:"#dff2f5", muted:"#7f989f", brass:"#45c9dd", rust:"#d65f5f"},
+ {name:"Night Sky",    ink:"#0d1117", raised:"#161b22", line:"#30363d", parchment:"#e6edf3", muted:"#8b949e", brass:"#58a6ff", rust:"#f85149"}
+];
+function hexNum(c){ return parseInt(c.slice(1),16); }
+function blendHex(a,b,t){
+  var A = hexNum(a), B = hexNum(b);
+  var r = Math.round(((A>>16)&255)*(1-t)+((B>>16)&255)*t);
+  var g = Math.round(((A>>8)&255)*(1-t)+((B>>8)&255)*t);
+  var bl = Math.round((A&255)*(1-t)+(B&255)*t);
+  return "#"+((1<<24)+(r<<16)+(g<<8)+bl).toString(16).slice(1);
+}
+function rgbaOf(c,a){
+  var A = hexNum(c);
+  return "rgba("+((A>>16)&255)+","+((A>>8)&255)+","+(A&255)+","+a+")";
+}
+function applyTheme(i){
+  var t = THEMES[i] || THEMES[0];
+  var s = document.documentElement.style;
+  s.setProperty("--ink", t.ink); s.setProperty("--raised", t.raised); s.setProperty("--line", t.line);
+  s.setProperty("--parchment", t.parchment); s.setProperty("--muted", t.muted);
+  s.setProperty("--brass", t.brass); s.setProperty("--rust", t.rust);
+  s.setProperty("--ghost", blendHex(t.muted, t.ink, .5));
+  s.setProperty("--daynum", blendHex(t.muted, t.ink, .5));
+  s.setProperty("--outnum", blendHex(t.muted, t.ink, .85));
+  s.setProperty("--rustdeep", blendHex(t.rust, t.ink, .32));
+  s.setProperty("--pipline", rgbaOf(t.parchment, .2));
+  s.setProperty("--piptext", rgbaOf(t.parchment, .3));
+  s.setProperty("--pipinvline", rgbaOf(t.ink, .35));
+  s.setProperty("--pipinvtext", rgbaOf(t.ink, .45));
+  var mt = document.querySelector('meta[name="theme-color"]');
+  if(mt) mt.setAttribute("content", t.ink);
+  document.querySelectorAll(".throw").forEach(function(b,j){ b.classList.toggle("on", j===i); });
+}
+function buildThemePanel(){
+  var box = document.createElement("div");
+  box.className = "themes";
+  var h = '<h3>Try a look <span id="thHide">hide</span></h3>';
+  THEMES.forEach(function(t,i){
+    h += '<button class="throw" data-i="'+i+'" style="background:'+t.raised+';color:'+t.parchment+
+         ';border-color:'+t.line+'">'+
+         '<span class="thsw"><i style="background:'+t.brass+'"></i><i style="background:'+t.rust+'"></i>'+
+         '<i style="background:'+t.parchment+'"></i></span>'+esc(t.name)+'</button>';
+  });
+  box.innerHTML = h;
+  document.body.appendChild(box);
+  box.querySelectorAll(".throw").forEach(function(b){
+    b.onclick = function(){
+      var i = Number(b.dataset.i);
+      try { localStorage.setItem(THEME_KEY, String(i)); } catch(e){}
+      applyTheme(i);
+    };
+  });
+  document.getElementById("thHide").onclick = function(){ box.classList.toggle("min"); };
+  var saved = 0;
+  try { saved = Number(localStorage.getItem(THEME_KEY) || 0) || 0; } catch(e){}
+  applyTheme(saved);
+}
 
 /* ---------- gate ---------- */
 var GATE_KEY = "bibleLog.gate";
@@ -808,6 +897,7 @@ function renderLock(){
 }
 
 if(isUnlocked()) boot(); else renderLock();
+buildThemePanel();
 </script>
 </body>
 </html>
