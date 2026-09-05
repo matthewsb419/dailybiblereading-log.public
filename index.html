@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#101820">
 <title>Reading Log</title>
 <style>
-:root{--ink:#101820;--raised:#1a2530;--line:#2b3946;--parchment:#e9e3d6;--muted:#8c96a1;--brass:#c79a4b;--rust:#a8654a}
+:root{--ink:#101820;--raised:#1a2530;--line:#2b3946;--parchment:#e9e3d6;--muted:#8c96a1;--brass:#c79a4b;--rust:#a8654a;--moss:#7d9b70}
 *{box-sizing:border-box}
 body{margin:0;background:var(--ink);color:var(--parchment);
  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
@@ -63,11 +63,20 @@ textarea::placeholder{color:#4a5764}
 .verdict{font-size:12px;color:var(--muted)}
 .verdict.on{color:var(--brass)}
 .mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:18px 0 12px}
-.mgrid span{aspect-ratio:1;border-radius:5px;font-size:11px;display:flex;align-items:center;justify-content:center;
- font-variant-numeric:tabular-nums;border:1px solid var(--line);color:#55626f}
-.mgrid span.complete{background:var(--brass);border-color:var(--brass);color:var(--ink);font-weight:600}
-.mgrid span.partial{border-color:var(--brass);color:var(--brass)}
-.mgrid span.out{border-color:transparent;color:#262f38}
+.mgrid>span{aspect-ratio:1;border-radius:5px;font-size:11px;display:flex;align-items:center;justify-content:center;
+ font-variant-numeric:tabular-nums;border:1px solid var(--line);color:#55626f;position:relative;padding-bottom:9px}
+.mgrid>span.complete{background:var(--brass);border-color:var(--brass);color:var(--ink);font-weight:600}
+.mgrid>span.partial{border-color:var(--brass);color:var(--brass)}
+.mgrid>span.out{border-color:transparent;color:#262f38;padding-bottom:0}
+.pips{position:absolute;bottom:3px;left:0;right:0;display:flex;justify-content:center;gap:3px}
+.pip{width:11px;height:11px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;
+ font-size:7px;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+ border:1px solid rgba(233,227,214,.2);color:rgba(233,227,214,.3)}
+.pip.ok{background:var(--moss);border-color:var(--moss);color:var(--ink)}
+.pip.no{background:var(--rust);border-color:var(--rust);color:var(--parchment)}
+.mgrid>span.complete .pip{border-color:rgba(16,24,32,.35);color:rgba(16,24,32,.45)}
+.mgrid>span.complete .pip.ok{background:#57724c;border-color:#57724c;color:var(--parchment)}
+.mgrid>span.complete .pip.no{background:#8a4630;border-color:#8a4630;color:var(--parchment)}
 .legend{display:flex;gap:14px;font-size:11px;color:var(--muted);flex-wrap:wrap}
 .legend span{display:flex;align-items:center;gap:5px}
 .sw{width:10px;height:10px;border-radius:3px;border:1px solid var(--line);display:inline-block}
@@ -126,9 +135,14 @@ textarea::placeholder{color:#4a5764}
 .seg button.sel{font-weight:600}
 .seg button.sel[data-v="no"]{background:var(--brass);color:var(--ink)}
 .seg button.sel[data-v="yes"]{background:var(--rust);color:var(--parchment)}
-.mgrid span.bad{background:var(--rust);border-color:var(--rust);color:var(--parchment);font-weight:600}
-.dots i.bad{background:var(--rust);border-color:var(--rust)}
-.sw.b{background:var(--rust);border-color:var(--rust)}
+.trows{margin:8px 0 2px}
+.trow{display:grid;grid-template-columns:58px 1fr 50px 28px;gap:10px;align-items:center;padding:6px 0}
+.tlab{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.trow .bar{margin:0;height:5px}
+.trow .bar u{height:11px;top:-3px}
+.tpct{font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
+.tgr{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:15px;color:var(--brass);text-align:right}
+.bar i.moss{background:var(--moss)}
 </style>
 </head>
 <body>
@@ -365,79 +379,22 @@ function pmMap(f){
   Object.keys(m).forEach(function(k){ out[k] = m[k].v; });
   return out;
 }
-function pmDays(){
-  // one combined map: each day worth 100%, split 50/50 between the two trackers
-  var maps = {}, keys = {};
-  TRACKERS.forEach(function(t){
-    maps[t.id] = pmMap(t.id);
-    Object.keys(maps[t.id]).forEach(function(k){ keys[k] = 1; });
-  });
-  var days = {};
-  Object.keys(keys).forEach(function(k){
-    var credit = 0, anyAnswer = false;
-    TRACKERS.forEach(function(t){
-      var v = maps[t.id][k];
-      if(v) anyAnswer = true;
-      if(v === "no") credit += 1/TRACKERS.length;
-    });
-    days[k] = {credit: credit,
-      state: credit >= 0.999 ? "complete" : credit > 0 ? "partial" : (anyAnswer ? "bad" : "missed")};
-  });
-  return days;
-}
-function pmFirstDay(days){
-  var ds = Object.keys(days).sort();
+function pmFirst(map){
+  var ds = Object.keys(map).sort();
   return ds.length ? ds[0] : null;
 }
-function pmMonthStats(days, first, y, m){
+function pmMonthStats(map, first, y, m){
   var s = parseKey(first), now = parseKey(yKey());
+  if(y>now.y || (y===now.y && m>now.m)) return null;
   var a = (y===s.y && m===s.m) ? s.d : 1;
   var b = (y===now.y && m===now.m) ? now.d : daysInMonth(y,m);
   if(b < a) return null;
-  var score=0, full=0, half=0, bad=0, marks={};
+  var clean = 0;
   for(var d=a; d<=b; d++){
-    var x = days[y+"-"+pad(m)+"-"+pad(d)];
-    if(!x){ marks[d]="missed"; continue; }
-    score += x.credit; marks[d] = x.state;
-    if(x.state==="complete") full++;
-    else if(x.state==="partial") half++;
-    else if(x.state==="bad") bad++;
+    if(map[y+"-"+pad(m)+"-"+pad(d)]==="no") clean++;
   }
   var el = b-a+1;
-  return {y:y,m:m,first:a,last:b,elapsed:el,score:score,full:full,half:half,bad:bad,
-          marks:marks, pct: el>0 ? (score/el)*100 : 0};
-}
-function pmAllMonths(days){
-  var first = pmFirstDay(days); if(!first) return [];
-  var s = parseKey(first), now = parseKey(yKey()), out=[], y=s.y, m=s.m;
-  while(y<now.y || (y===now.y && m<=now.m)){
-    var ms = pmMonthStats(days, first, y, m);
-    if(ms) out.push(ms);
-    m++; if(m>12){ m=1; y++; }
-  }
-  return out.reverse();
-}
-function pmWeek(days, first){
-  var sd = asDate(first), now = parseKey(yKey()), out=[], score=0;
-  for(var i=6;i>=0;i--){
-    var d = new Date(now.y, now.m-1, now.d-i);
-    if(d < sd) continue;
-    var k = keyOf(d), x = days[k];
-    out.push({k:k, state: x ? x.state : "missed"});
-    if(x) score += x.credit;
-  }
-  return {days:out, score:score, elapsed:out.length,
-          pct: out.length ? (score/out.length)*100 : 0};
-}
-function pmStreaks(days, first){
-  var d = asDate(first), end = asDate(yKey()), cur=0, best=0;
-  while(d <= end){
-    var x = days[keyOf(d)];
-    if(x && x.credit >= 0.999){ cur++; if(cur>best) best=cur; }
-    else cur = 0;
-    d.setDate(d.getDate()+1);
-  }
-  return {cur:cur, best:best};
+  return {clean:clean, elapsed:el, pct: el>0 ? (clean/el)*100 : 0};
 }
 
 /* ---------- export / import ---------- */
@@ -566,30 +523,45 @@ function render(){
       var totalComplete = Object.keys(dm).filter(function(k){ return isComplete(dm[k]); }).length;
       var start = firstDate();
       var totalElapsed = Math.round((asDate(keyOf()) - asDate(start))/86400000) + 1;
-      var short = Math.ceil((MONTH_TARGET/100)*tm.elapsed - tm.complete);
+
+      var pMapv = pmMap("p"), mMapv = pmMap("m");
+      var pF = pmFirst(pMapv), mF = pmFirst(mMapv);
+      var pMS = pF ? pmMonthStats(pMapv, pF, tm.y, tm.m) : null;
+      var mMS = mF ? pmMonthStats(mMapv, mF, tm.y, tm.m) : null;
+
+      var barRow = function(lab, pct, elapsed, moss){
+        return '<div class="trow"><span class="tlab">'+lab+'</span>'+
+               '<div class="bar sm"><i'+(moss?' class="moss"':'')+' style="width:'+Math.min(100,pct)+'%"></i>'+
+               '<u style="left:'+MONTH_TARGET+'%"></u></div>'+
+               '<span class="tpct">'+pct.toFixed(1)+'%</span>'+
+               '<span class="tgr">'+(elapsed<GRADE_FLOOR ? "\u2014" : gradeFor(pct))+'</span></div>';
+      };
+      var pip = function(v, lab){
+        return '<b class="pip'+(v==="no" ? " ok" : (v==="yes" ? " no" : ""))+'">'+lab+'</b>';
+      };
 
       html += '<section class="card"><div class="eyebrow">'+esc(monthName(tm.y,tm.m))+'</div>'+
-              '<div class="big"><div class="pct">'+tm.pct.toFixed(1)+'%</div>'+
-              '<div class="grade'+(tm.elapsed<GRADE_FLOOR?" off":"")+'">'+
-              (tm.elapsed<GRADE_FLOOR ? "\u2014" : gradeFor(tm.pct))+'</div></div>'+
-              '<div class="sub">'+tm.complete+' of '+tm.elapsed+' days with all three answered'+
-              (tm.partial ? ' \u00b7 '+tm.partial+' partial' : '')+'</div>'+
-              '<div class="bar"><i style="width:'+Math.min(100,tm.pct)+'%"></i>'+
-              '<u style="left:'+MONTH_TARGET+'%"></u></div>'+
-              '<div class="verdict'+(tm.pct>=MONTH_TARGET?" on":"")+'">'+
-              (tm.elapsed<GRADE_FLOOR ? "Too early to call \u2014 target is "+MONTH_TARGET+"%"
-               : tm.pct>=MONTH_TARGET ? "Above your "+MONTH_TARGET+"% target"
-               : short+" day"+(short===1?"":"s")+" short of "+MONTH_TARGET+"%")+'</div>';
+              '<div class="trows">'+
+              barRow("Reading", tm.pct, tm.elapsed, false)+
+              (pMS ? barRow("P", pMS.pct, pMS.elapsed, true) : '')+
+              (mMS ? barRow("M", mMS.pct, mMS.elapsed, true) : '')+
+              '</div>';
 
       html += '<div class="mgrid">';
       for(var d=1; d<=daysInMonth(tm.y,tm.m); d++){
+        var dk = tm.y+"-"+pad(tm.m)+"-"+pad(d);
+        var pv = pMapv[dk], mv = mMapv[dk];
         var inR = d>=tm.first && d<=tm.last;
-        html += '<span class="'+(inR?tm.marks[d]:"out")+'">'+d+'</span>';
+        var cls = inR ? tm.marks[d] : ((pv||mv) ? "missed" : "out");
+        var pips = cls!=="out" ? '<span class="pips">'+pip(pv,"P")+pip(mv,"M")+'</span>' : '';
+        html += '<span class="'+cls+'">'+d+pips+'</span>';
       }
       html += '</div><div class="legend">'+
               '<span><i class="sw c"></i>All three</span>'+
               '<span><i class="sw p"></i>Partial</span>'+
-              '<span><i class="sw"></i>Missed</span></div></section>';
+              '<span><i class="sw"></i>Missed</span>'+
+              '<span><b class="pip ok">P</b>No</span>'+
+              '<span><b class="pip no">M</b>Yes</span></div></section>';
 
       html += '<section class="card"><div class="sechead"><span>Last 7 days</span></div>'+
               '<div class="weekrow"><div class="dots">';
@@ -618,74 +590,6 @@ function render(){
         });
         html += '</section>';
       }
-    }
-  }
-
-  if(page === "record"){
-    var pdays = pmDays();
-    var pfirst = pmFirstDay(pdays);
-    if(pfirst){
-      var pmonths = pmAllMonths(pdays);
-      var ptm = pmonths[0];
-      var pwk = pmWeek(pdays, pfirst);
-      var pst = pmStreaks(pdays, pfirst);
-      var totScore = 0;
-      Object.keys(pdays).forEach(function(k){ totScore += pdays[k].credit; });
-      var totElapsed = Math.round((asDate(yKey()) - asDate(pfirst))/86400000) + 1;
-      var punans = ptm.elapsed - ptm.full - ptm.half - ptm.bad;
-
-      html += '<section class="card" style="margin-top:20px">'+
-              '<div class="eyebrow">P&amp;M · '+esc(monthName(ptm.y,ptm.m))+'</div>'+
-              '<div class="big"><div class="pct">'+ptm.pct.toFixed(1)+'%</div>'+
-              '<div class="grade'+(ptm.elapsed<GRADE_FLOOR?" off":"")+'">'+
-              (ptm.elapsed<GRADE_FLOOR ? "—" : gradeFor(ptm.pct))+'</div></div>'+
-              '<div class="sub">'+ptm.full+' full'+
-              (ptm.half ? ' · '+ptm.half+' half' : '')+
-              (ptm.bad ? ' · '+ptm.bad+' lost' : '')+
-              (punans ? ' · '+punans+' unanswered' : '')+
-              ' — each No is worth half the day</div>'+
-              '<div class="bar"><i style="width:'+Math.min(100,ptm.pct)+'%"></i>'+
-              '<u style="left:'+MONTH_TARGET+'%"></u></div>'+
-              '<div class="verdict'+(ptm.pct>=MONTH_TARGET?" on":"")+'">'+
-              (ptm.elapsed<GRADE_FLOOR ? "Too early to call — target is "+MONTH_TARGET+"%"
-               : ptm.pct>=MONTH_TARGET ? "Above your "+MONTH_TARGET+"% target"
-               : "Below your "+MONTH_TARGET+"% target")+'</div>';
-
-      html += '<div class="mgrid">';
-      for(var pd=1; pd<=daysInMonth(ptm.y,ptm.m); pd++){
-        var pin = pd>=ptm.first && pd<=ptm.last;
-        html += '<span class="'+(pin?ptm.marks[pd]:"out")+'">'+pd+'</span>';
-      }
-      html += '</div><div class="legend">'+
-              '<span><i class="sw c"></i>100%</span>'+
-              '<span><i class="sw p"></i>50%</span>'+
-              '<span><i class="sw b"></i>0%</span>'+
-              '<span><i class="sw"></i>No answer</span></div>';
-
-      html += '<div class="sechead" style="margin-top:18px"><span>Last 7 days</span></div>'+
-              '<div class="weekrow"><div class="dots">';
-      pwk.days.forEach(function(x){ html += '<i class="'+x.state+'" title="'+esc(shortDate(x.k))+'"></i>'; });
-      html += '</div><div class="wnum">'+(Math.round(pwk.score*10)/10)+'/'+pwk.elapsed+
-              '<small class="'+(pwk.pct>=WEEK_TARGET?"on":"")+'">'+pwk.pct.toFixed(0)+'%</small></div></div>';
-
-      html += '<div class="sechead" style="margin-top:18px"><span>All time</span></div>'+
-              '<div class="totals">'+
-              '<div><b>'+pst.cur+'</b><span>current streak</span></div>'+
-              '<div><b>'+pst.best+'</b><span>best streak</span></div>'+
-              '<div><b>'+((totScore/totElapsed)*100).toFixed(1)+'%</b><span>since '+esc(shortDate(pfirst))+'</span></div>'+
-              '</div>';
-
-      if(pmonths.length > 1){
-        html += '<div class="sechead" style="margin-top:18px"><span>By month</span></div>';
-        pmonths.forEach(function(ms){
-          html += '<div class="mrow"><span class="n">'+esc(monthName(ms.y,ms.m))+'</span>'+
-                  '<span class="f">'+(Math.round(ms.score*10)/10)+'/'+ms.elapsed+'</span>'+
-                  '<span class="p'+(ms.pct>=MONTH_TARGET?" on":"")+'">'+ms.pct.toFixed(1)+'%</span>'+
-                  '<span class="g">'+(ms.elapsed<GRADE_FLOOR?"—":gradeFor(ms.pct))+'</span></div>';
-        });
-      }
-      html += '<div class="note">Answers count toward the day they describe — the day before the entry. '+
-              'A full day needs No to both; streaks are full days only.</div></section>';
     }
   }
 
