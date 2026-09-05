@@ -422,6 +422,7 @@ function buildThemePanel(){
 var SYNC_REPO = "matthewsb419/dailybiblereading-data";
 var SYNC_URL = "https://api.github.com/repos/"+SYNC_REPO+"/contents/data.json";
 var TOKEN_KEY = "bibleLog.ghtoken";
+var TOKEN_EXPIRES = "2026-12-04"; // update this date whenever a new token is created
 var syncSha = null, pushTimer = null, syncOpen = false, syncBusy = false;
 
 function ghToken(){ try { return localStorage.getItem(TOKEN_KEY) || ""; } catch(e){ return ""; } }
@@ -794,6 +795,19 @@ function render(){
               '<button id="ghClose" class="quiet">Close</button></div></section>';
     }
 
+    if(ghToken()){
+      var expLeft = Math.round((asDate(TOKEN_EXPIRES) - asDate(keyOf()))/86400000);
+      if(expLeft < 0){
+        html += '<p class="foot" style="color:var(--rust)">Your sync token expired on '+
+                esc(shortDate(TOKEN_EXPIRES))+' — sync is paused. Create a new fine-grained token '+
+                '(github.com &rarr; Settings &rarr; Developer settings) with Contents read &amp; write on the data '+
+                'repo, then paste it in Sync settings.</p>';
+      } else if(expLeft <= 21){
+        html += '<p class="foot" style="color:var(--rust)">Heads up: your sync token expires '+
+                esc(shortDate(TOKEN_EXPIRES))+' ('+expLeft+' day'+(expLeft===1?"":"s")+' left). '+
+                'Create a new one and paste it into Sync settings on each device.</p>';
+      }
+    }
     html += '<p class="foot">'+
             (ghToken() ? 'Syncing with a private GitHub repo — your other devices pick up changes when they open the app. '
                        : 'Saved in this browser on this device. Set up sync to share entries with your phone. ')+
