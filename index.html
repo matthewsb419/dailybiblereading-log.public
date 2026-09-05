@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#101820">
+<meta name="theme-color" content="#161310">
 <title>Reading Log</title>
 <style>
-:root{--ink:#101820;--raised:#1a2530;--line:#2b3946;--parchment:#e9e3d6;--muted:#8c96a1;--brass:#c79a4b;--rust:#a8654a;--moss:#7d9b70}
+:root{--ink:#161310;--raised:#201b15;--line:#342d22;--parchment:#eae2cf;--muted:#9a8f7a;--brass:#c9a25a;--rust:#b0543a}
 *{box-sizing:border-box}
 body{margin:0;background:var(--ink);color:var(--parchment);
  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
@@ -43,7 +43,7 @@ textarea{width:100%;background:var(--ink);border:1px solid var(--line);border-ra
  font-size:16px;line-height:1.5;padding:10px 11px;resize:vertical;min-height:76px;
  font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif}
 textarea:focus{outline:2px solid var(--brass);outline-offset:1px;border-color:transparent}
-textarea::placeholder{color:#4a5764}
+textarea::placeholder{color:#574e3e}
 .cardfoot{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .status{font-size:12px;color:var(--muted);min-height:16px;line-height:1.4}
 .status.err{color:var(--rust)}
@@ -64,19 +64,28 @@ textarea::placeholder{color:#4a5764}
 .verdict.on{color:var(--brass)}
 .mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:18px 0 12px}
 .mgrid>span{aspect-ratio:1;border-radius:5px;font-size:11px;display:flex;align-items:center;justify-content:center;
- font-variant-numeric:tabular-nums;border:1px solid var(--line);color:#55626f;position:relative;padding-bottom:9px}
+ font-variant-numeric:tabular-nums;border:1px solid var(--line);color:#6a604c;position:relative;padding-bottom:9px}
 .mgrid>span.complete{background:var(--brass);border-color:var(--brass);color:var(--ink);font-weight:600}
 .mgrid>span.partial{border-color:var(--brass);color:var(--brass)}
-.mgrid>span.out{border-color:transparent;color:#262f38;padding-bottom:0}
+.mgrid>span.out{border-color:transparent;color:#2b251b;padding-bottom:0}
+.mgrid>span.blank{border-color:transparent;padding-bottom:0}
+.mgrid.dowrow{margin:16px 0 0}
+.mgrid.cal{margin-top:6px}
+.mgrid>span.dh{aspect-ratio:auto;border:none;padding:0;color:var(--muted);font-size:10px;letter-spacing:.08em;opacity:.75}
+.mnav{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.mnav .eyebrow{margin-bottom:0}
+.mnav button{width:28px;height:28px;border-radius:6px;border:1px solid var(--line);background:transparent;
+ color:var(--muted);font-size:16px;line-height:1;cursor:pointer}
+.mnav button:disabled{opacity:.25}
 .pips{position:absolute;bottom:3px;left:0;right:0;display:flex;justify-content:center;gap:3px}
 .pip{width:11px;height:11px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;
  font-size:7px;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
- border:1px solid rgba(233,227,214,.2);color:rgba(233,227,214,.3)}
-.pip.ok{background:var(--moss);border-color:var(--moss);color:var(--ink)}
+ border:1px solid rgba(234,226,207,.2);color:rgba(234,226,207,.3)}
+.pip.ok{background:var(--brass);border-color:var(--brass);color:var(--ink)}
 .pip.no{background:var(--rust);border-color:var(--rust);color:var(--parchment)}
-.mgrid>span.complete .pip{border-color:rgba(16,24,32,.35);color:rgba(16,24,32,.45)}
-.mgrid>span.complete .pip.ok{background:#57724c;border-color:#57724c;color:var(--parchment)}
-.mgrid>span.complete .pip.no{background:#8a4630;border-color:#8a4630;color:var(--parchment)}
+.mgrid>span.complete .pip{border-color:rgba(22,19,16,.35);color:rgba(22,19,16,.45)}
+.mgrid>span.complete .pip.ok{background:var(--ink);border-color:var(--ink);color:var(--brass)}
+.mgrid>span.complete .pip.no{background:#7e341f;border-color:#7e341f;color:var(--parchment)}
 .legend{display:flex;gap:14px;font-size:11px;color:var(--muted);flex-wrap:wrap}
 .legend span{display:flex;align-items:center;gap:5px}
 .sw{width:10px;height:10px;border-radius:3px;border:1px solid var(--line);display:inline-block}
@@ -124,12 +133,12 @@ textarea::placeholder{color:#4a5764}
 .lockmsg{font-size:12px;color:var(--rust);min-height:16px;margin-top:10px}
 .pmwrap{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
  margin:2px 0 14px;padding:12px 2px 0;border-top:1px solid var(--line)}
-.pmhead{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#4a5764}
+.pmhead{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#574e3e}
 .pmset{display:flex;gap:16px;align-items:center}
 .pmitem{display:flex;align-items:center;gap:7px}
 .pmlab{font-size:12px;color:var(--muted)}
 .seg{display:flex;border:1px solid var(--line);border-radius:16px;overflow:hidden}
-.seg button{background:transparent;border:none;color:#4a5764;font-size:12px;padding:5px 13px;cursor:pointer;
+.seg button{background:transparent;border:none;color:#574e3e;font-size:12px;padding:5px 13px;cursor:pointer;
  letter-spacing:.03em;transition:background .15s,color .15s}
 .seg button+button{border-left:1px solid var(--line)}
 .seg button.sel{font-weight:600}
@@ -142,7 +151,24 @@ textarea::placeholder{color:#4a5764}
 .trow .bar u{height:11px;top:-3px}
 .tpct{font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
 .tgr{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:15px;color:var(--brass);text-align:right}
-.bar i.moss{background:var(--moss)}
+.bar i.alt{background:var(--parchment)}
+.weekrow .tlab{width:58px;flex:none}
+.weekrow .dots{margin-right:auto}
+.weekrow{padding:5px 0}
+.weekrow .wnum{font-size:17px;min-width:66px;text-align:right}
+.dots i.fail{background:var(--rust);border-color:var(--rust)}
+.arow{display:grid;grid-template-columns:58px 1fr auto;gap:10px;align-items:baseline;padding:8px 0;
+ border-bottom:1px solid var(--line)}
+.arow .det{font-size:12px;color:var(--muted)}
+.apct{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:18px;color:var(--parchment)}
+.apct.on{color:var(--brass)}
+.mrow4{display:grid;grid-template-columns:1fr 54px 44px 44px;gap:8px;align-items:baseline;
+ border-bottom:1px solid var(--line);padding:11px 2px}
+.mrow4 .n{font-size:13px}
+.mrow4 .p{font-size:12px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.mrow4 .p.on{color:var(--brass)}
+.mrow4.hd{border-bottom:none;padding:0 2px 2px}
+.mrow4.hd span{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:right}
 </style>
 </head>
 <body>
@@ -273,6 +299,8 @@ var LS_KEY = "bibleLog.v1";
 var state = { version:1, entries:{} };   // entries keyed by PLAN DAY number
 var page = "today";
 var viewDay = 1;
+var _now0 = parseKey(keyOf());
+var viewY = _now0.y, viewM = _now0.m;
 var statusMsg = "";
 var statusErr = false;
 var saveTimer = null;
@@ -337,7 +365,7 @@ function monthStats(y,m){
   for(var d=first; d<=last; d++){
     var e = dm[y+"-"+pad(m)+"-"+pad(d)];
     if(isComplete(e)){ complete++; marks[d]="complete"; }
-    else if(e){ partial++; marks[d]="partial"; }
+    else if(e && answered(e)>0){ partial++; marks[d]="partial"; }
     else marks[d]="missed";
   }
   return {y:y,m:m,first:first,last:last,elapsed:elapsed,complete:complete,partial:partial,
@@ -356,7 +384,7 @@ function weekStats(){
     var d = new Date(now.y, now.m-1, now.d-i);
     if(d < sd) continue;
     var k = keyOf(d), e = dm[k];
-    days.push({k:k, state: isComplete(e) ? "complete" : (e ? "partial" : "missed")});
+    days.push({k:k, state: isComplete(e) ? "complete" : (e && answered(e)>0 ? "partial" : "missed")});
   }
   var complete = days.filter(function(x){return x.state==="complete";}).length;
   return {days:days, complete:complete, elapsed:days.length,
@@ -386,6 +414,7 @@ function pmFirst(map){
 function pmMonthStats(map, first, y, m){
   var s = parseKey(first), now = parseKey(yKey());
   if(y>now.y || (y===now.y && m>now.m)) return null;
+  if(y<s.y || (y===s.y && m<s.m)) return null;
   var a = (y===s.y && m===s.m) ? s.d : 1;
   var b = (y===now.y && m===now.m) ? now.d : daysInMonth(y,m);
   if(b < a) return null;
@@ -395,6 +424,17 @@ function pmMonthStats(map, first, y, m){
   }
   var el = b-a+1;
   return {clean:clean, elapsed:el, pct: el>0 ? (clean/el)*100 : 0};
+}
+function tWeek(map, first){
+  var sd = asDate(first), now = parseKey(yKey()), out=[], n=0;
+  for(var i=6;i>=0;i--){
+    var d = new Date(now.y, now.m-1, now.d-i);
+    if(d < sd) continue;
+    var k = keyOf(d), v = map[k];
+    out.push({k:k, state: v==="no" ? "complete" : (v==="yes" ? "fail" : "missed")});
+    if(v==="no") n++;
+  }
+  return {days:out, n:n, elapsed:out.length, pct: out.length ? (n/out.length)*100 : 0};
 }
 
 /* ---------- export / import ---------- */
@@ -518,7 +558,7 @@ function render(){
       html += '<section class="card" style="color:var(--muted);font-size:14px;line-height:1.5">'+
               'Nothing scored yet. Answer all three questions on a day and it starts counting.</section>';
     } else {
-      var tm = months[0], wk = weekStats();
+      var wk = weekStats();
       var dm = dateMap();
       var totalComplete = Object.keys(dm).filter(function(k){ return isComplete(dm[k]); }).length;
       var start = firstDate();
@@ -526,32 +566,55 @@ function render(){
 
       var pMapv = pmMap("p"), mMapv = pmMap("m");
       var pF = pmFirst(pMapv), mF = pmFirst(mMapv);
-      var pMS = pF ? pmMonthStats(pMapv, pF, tm.y, tm.m) : null;
-      var mMS = mF ? pmMonthStats(mMapv, mF, tm.y, tm.m) : null;
 
-      var barRow = function(lab, pct, elapsed, moss){
+      var nowP = parseKey(keyOf());
+      var minKey = [start, pF, mF].filter(Boolean).sort()[0];
+      var minP = parseKey(minKey);
+      if(viewY < minP.y || (viewY === minP.y && viewM < minP.m)){ viewY = minP.y; viewM = minP.m; }
+      if(viewY > nowP.y || (viewY === nowP.y && viewM > nowP.m)){ viewY = nowP.y; viewM = nowP.m; }
+      var atMin = viewY === minP.y && viewM === minP.m;
+      var atMax = viewY === nowP.y && viewM === nowP.m;
+      var sP = parseKey(start);
+      var tm = (viewY > sP.y || (viewY === sP.y && viewM >= sP.m)) ? monthStats(viewY, viewM) : null;
+      var pMS = pF ? pmMonthStats(pMapv, pF, viewY, viewM) : null;
+      var mMS = mF ? pmMonthStats(mMapv, mF, viewY, viewM) : null;
+
+      var barRow = function(lab, ms, alt){
+        if(!ms) return '<div class="trow"><span class="tlab">'+lab+'</span>'+
+                       '<div class="bar sm"></div><span class="tpct">\u2014</span><span class="tgr">\u2014</span></div>';
         return '<div class="trow"><span class="tlab">'+lab+'</span>'+
-               '<div class="bar sm"><i'+(moss?' class="moss"':'')+' style="width:'+Math.min(100,pct)+'%"></i>'+
+               '<div class="bar sm"><i'+(alt?' class="alt"':'')+' style="width:'+Math.min(100,ms.pct)+'%"></i>'+
                '<u style="left:'+MONTH_TARGET+'%"></u></div>'+
-               '<span class="tpct">'+pct.toFixed(1)+'%</span>'+
-               '<span class="tgr">'+(elapsed<GRADE_FLOOR ? "\u2014" : gradeFor(pct))+'</span></div>';
+               '<span class="tpct">'+ms.pct.toFixed(1)+'%</span>'+
+               '<span class="tgr">'+(ms.elapsed<GRADE_FLOOR ? "\u2014" : gradeFor(ms.pct))+'</span></div>';
       };
       var pip = function(v, lab){
         return '<b class="pip'+(v==="no" ? " ok" : (v==="yes" ? " no" : ""))+'">'+lab+'</b>';
       };
 
-      html += '<section class="card"><div class="eyebrow">'+esc(monthName(tm.y,tm.m))+'</div>'+
+      var pm1 = viewM===1 ? {y:viewY-1,m:12} : {y:viewY,m:viewM-1};
+      var nm1 = viewM===12 ? {y:viewY+1,m:1} : {y:viewY,m:viewM+1};
+      html += '<section class="card">'+
+              '<div class="mnav"><button id="mPrev" data-y="'+pm1.y+'" data-m="'+pm1.m+'"'+(atMin?' disabled':'')+
+              ' aria-label="Previous month">&#8249;</button>'+
+              '<div class="eyebrow">'+esc(monthName(viewY,viewM))+'</div>'+
+              '<button id="mNext" data-y="'+nm1.y+'" data-m="'+nm1.m+'"'+(atMax?' disabled':'')+
+              ' aria-label="Next month">&#8250;</button></div>'+
               '<div class="trows">'+
-              barRow("Reading", tm.pct, tm.elapsed, false)+
-              (pMS ? barRow("P", pMS.pct, pMS.elapsed, true) : '')+
-              (mMS ? barRow("M", mMS.pct, mMS.elapsed, true) : '')+
+              barRow("Reading", tm, false)+
+              barRow("P", pMS, true)+
+              barRow("M", mMS, true)+
               '</div>';
 
-      html += '<div class="mgrid">';
-      for(var d=1; d<=daysInMonth(tm.y,tm.m); d++){
-        var dk = tm.y+"-"+pad(tm.m)+"-"+pad(d);
+      html += '<div class="mgrid dowrow">';
+      ["S","M","T","W","T","F","S"].forEach(function(x){ html += '<span class="dh">'+x+'</span>'; });
+      html += '</div><div class="mgrid cal">';
+      var lead = new Date(viewY, viewM-1, 1).getDay();
+      for(var bl=0; bl<lead; bl++) html += '<span class="blank"></span>';
+      for(var d=1; d<=daysInMonth(viewY,viewM); d++){
+        var dk = viewY+"-"+pad(viewM)+"-"+pad(d);
         var pv = pMapv[dk], mv = mMapv[dk];
-        var inR = d>=tm.first && d<=tm.last;
+        var inR = tm && d>=tm.first && d<=tm.last;
         var cls = inR ? tm.marks[d] : ((pv||mv) ? "missed" : "out");
         var pips = cls!=="out" ? '<span class="pips">'+pip(pv,"P")+pip(mv,"M")+'</span>' : '';
         html += '<span class="'+cls+'">'+d+pips+'</span>';
@@ -563,30 +626,54 @@ function render(){
               '<span><b class="pip ok">P</b>No</span>'+
               '<span><b class="pip no">M</b>Yes</span></div></section>';
 
-      html += '<section class="card"><div class="sechead"><span>Last 7 days</span></div>'+
-              '<div class="weekrow"><div class="dots">';
-      wk.days.forEach(function(x){ html += '<i class="'+x.state+'" title="'+esc(shortDate(x.k))+'"></i>'; });
-      html += '</div><div class="wnum">'+wk.complete+'/'+wk.elapsed+
-              '<small class="'+(wk.pct>=WEEK_TARGET?"on":"")+'">'+wk.pct.toFixed(0)+'%</small></div></div>'+
-              '<div class="note">Rolling seven days, not Sunday-to-Saturday. '+
-              'At '+WEEK_TARGET+'%, six of seven passes and five fails.</div></section>';
+      var weekRow = function(lab, days, n, elapsed, pct){
+        var dots = '';
+        days.forEach(function(x){ dots += '<i class="'+x.state+'" title="'+esc(shortDate(x.k))+'"></i>'; });
+        return '<div class="weekrow"><span class="tlab">'+lab+'</span><div class="dots">'+dots+'</div>'+
+               '<div class="wnum">'+n+'/'+elapsed+
+               '<small class="'+(pct>=WEEK_TARGET?"on":"")+'">'+pct.toFixed(0)+'%</small></div></div>';
+      };
+      html += '<section class="card"><div class="sechead"><span>Last 7 days</span></div>';
+      html += weekRow("Reading", wk.days, wk.complete, wk.elapsed, wk.pct);
+      var pWk = pF ? tWeek(pMapv, pF) : null;
+      var mWk = mF ? tWeek(mMapv, mF) : null;
+      if(pWk) html += weekRow("P", pWk.days, pWk.n, pWk.elapsed, pWk.pct);
+      if(mWk) html += weekRow("M", mWk.days, mWk.n, mWk.elapsed, mWk.pct);
+      html += '<div class="note">Rolling seven days, not Sunday-to-Saturday. '+
+              'P and M run a day behind \u2014 each answer lands on the day it describes.</div></section>';
 
-      html += '<section class="card"><div class="sechead"><span>All time</span></div>'+
-              '<div class="totals">'+
-              '<div><b>'+totalComplete+'</b><span>days kept</span></div>'+
-              '<div><b>'+totalElapsed+'</b><span>since '+esc(shortDate(start))+'</span></div>'+
-              '<div><b>'+((totalComplete/totalElapsed)*100).toFixed(1)+'%</b><span>overall</span></div>'+
-              '</div><div class="bar" style="margin-top:16px">'+
+      var aRow = function(lab, n, el, sinceKey){
+        var pct = el>0 ? (n/el)*100 : 0;
+        return '<div class="arow"><span class="tlab">'+lab+'</span>'+
+               '<span class="det">'+n+' of '+el+' days \u00b7 since '+esc(shortDate(sinceKey))+'</span>'+
+               '<span class="apct'+(pct>=MONTH_TARGET?" on":"")+'">'+pct.toFixed(1)+'%</span></div>';
+      };
+      html += '<section class="card"><div class="sechead"><span>All time</span></div>';
+      html += aRow("Reading", totalComplete, totalElapsed, start);
+      if(pF){
+        var pClean = Object.keys(pMapv).filter(function(k){ return pMapv[k]==="no"; }).length;
+        html += aRow("P", pClean, Math.round((asDate(yKey()) - asDate(pF))/86400000) + 1, pF);
+      }
+      if(mF){
+        var mClean = Object.keys(mMapv).filter(function(k){ return mMapv[k]==="no"; }).length;
+        html += aRow("M", mClean, Math.round((asDate(yKey()) - asDate(mF))/86400000) + 1, mF);
+      }
+      html += '<div class="bar" style="margin-top:16px">'+
               '<i style="width:'+Math.min(100,(totalComplete/YEAR_GOAL)*100)+'%"></i></div>'+
-              '<div class="sub">'+totalComplete+' of '+YEAR_GOAL+' days toward the year</div></section>';
+              '<div class="sub">'+totalComplete+' of '+YEAR_GOAL+' reading days toward the year</div></section>';
 
-      if(months.length > 1){
-        html += '<section style="margin-top:20px"><div class="sechead"><span>By month</span></div>';
+      if(months.length){
+        html += '<section style="margin-top:20px"><div class="sechead"><span>By month</span></div>'+
+                '<div class="mrow4 hd"><span></span><span>Read</span><span>P</span><span>M</span></div>';
         months.forEach(function(ms){
-          html += '<div class="mrow"><span class="n">'+esc(monthName(ms.y,ms.m))+'</span>'+
-                  '<span class="f">'+ms.complete+'/'+ms.elapsed+'</span>'+
-                  '<span class="p'+(ms.pct>=MONTH_TARGET?" on":"")+'">'+ms.pct.toFixed(1)+'%</span>'+
-                  '<span class="g">'+(ms.elapsed<GRADE_FLOOR?"\u2014":gradeFor(ms.pct))+'</span></div>';
+          var pp = pF ? pmMonthStats(pMapv, pF, ms.y, ms.m) : null;
+          var mm = mF ? pmMonthStats(mMapv, mF, ms.y, ms.m) : null;
+          var cell = function(x){
+            if(!x) return '<span class="p">\u2014</span>';
+            return '<span class="p'+(x.pct>=MONTH_TARGET?" on":"")+'">'+x.pct.toFixed(0)+'%</span>';
+          };
+          html += '<div class="mrow4"><span class="n">'+esc(monthName(ms.y,ms.m))+'</span>'+
+                  cell(ms)+cell(pp)+cell(mm)+'</div>';
         });
         html += '</section>';
       }
@@ -599,7 +686,15 @@ function render(){
 
 function wire(){
   document.querySelectorAll("nav button").forEach(function(b){
-    b.onclick = function(){ page = b.dataset.page; statusMsg=""; render(); };
+    b.onclick = function(){
+      page = b.dataset.page; statusMsg="";
+      var n0 = parseKey(keyOf()); viewY = n0.y; viewM = n0.m;
+      render();
+    };
+  });
+  ["mPrev","mNext"].forEach(function(id){
+    var b = document.getElementById(id);
+    if(b) b.onclick = function(){ viewY = Number(b.dataset.y); viewM = Number(b.dataset.m); render(); };
   });
   var prev = document.getElementById("prev");
   var next = document.getElementById("next");
