@@ -11,7 +11,7 @@
 :root{--ink:#10151a;--raised:#182028;--line:#2a3441;--parchment:#e6ebef;--muted:#8b98a5;--brass:#89b7d6;--rust:#c05c56;
  --ghost:#475462;--daynum:#4d5a67;--outnum:#232b33;--rustdeep:#8c3530;
  --pipline:rgba(230,235,239,.2);--piptext:rgba(230,235,239,.3);
- --pipinvline:rgba(16,21,26,.35);--pipinvtext:rgba(16,21,26,.45)}
+ --pipinvline:rgba(16,21,26,.35);--pipinvtext:rgba(16,21,26,.45);--track:#10151a}
 *{box-sizing:border-box}
 body{margin:0;background:var(--ink);color:var(--parchment);
  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
@@ -60,7 +60,7 @@ textarea::placeholder{color:var(--ghost)}
 .big .grade{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:44px;line-height:1;color:var(--brass)}
 .big .grade.off{color:var(--line)}
 .sub{font-size:13px;color:var(--muted);line-height:1.45}
-.bar{position:relative;height:6px;background:var(--ink);border-radius:3px;margin:14px 0 8px}
+.bar{position:relative;height:6px;background:var(--track);border-radius:3px;margin:14px 0 8px}
 .bar i{display:block;height:100%;background:var(--brass);border-radius:3px}
 .bar u{position:absolute;top:-3px;width:2px;height:12px;background:var(--parchment)}
 .verdict{font-size:12px;color:var(--muted)}
@@ -135,10 +135,15 @@ textarea::placeholder{color:var(--ghost)}
 .throw.on{box-shadow:0 0 0 2px var(--brass)}
 .thsw{display:flex;gap:3px;flex:none}
 .thsw i{width:12px;height:12px;border-radius:4px;display:block}
-.themes.min .throw{display:none}
 .thrand{display:block;width:100%;margin-bottom:8px;padding:8px 10px;border-radius:7px;border:1px dashed var(--brass);
  background:transparent;color:var(--brass);font-size:12px;letter-spacing:.04em;cursor:pointer}
-.themes.min .thrand{display:none}
+.thgrp{display:flex;justify-content:space-between;align-items:center;width:100%;background:none;border:none;
+ color:var(--muted);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:8px 4px 6px;cursor:pointer}
+.thgrp i{font-style:normal;font-size:10px;opacity:.7}
+.thgrp .arr{font-weight:400}
+.thgbody{display:none}
+.thgbody.open{display:block}
+.themes.min .throw,.themes.min .thrand,.themes.min .thgrp,.themes.min .thgbody{display:none}
 @media (max-width:1080px){
  .themes{left:12px;right:12px;top:auto;bottom:12px;width:auto;display:flex;flex-wrap:wrap;gap:4px;max-height:36vh}
  .themes h3{width:100%;margin-bottom:4px}
@@ -280,27 +285,38 @@ var PLAN = buildPlan();
 /* ---------- themes (temporary picker) ---------- */
 var THEME_KEY = "bibleLog.themePick";
 var THEMES = [
- {name:"Slate & Ice",  ink:"#10151a", raised:"#182028", line:"#2a3441", parchment:"#e6ebef", muted:"#8b98a5", brass:"#89b7d6", rust:"#c05c56"},
- {name:"Violet Night", ink:"#131318", raised:"#1b1b23", line:"#2f2f3c", parchment:"#e9e8f0", muted:"#9795a8", brass:"#a78bfa", rust:"#d16060"},
- {name:"Sea Glass",    ink:"#0e1517", raised:"#152022", line:"#25373a", parchment:"#e2eeec", muted:"#87a09d", brass:"#66c7b4", rust:"#cf6660"},
- {name:"Monochrome",   ink:"#111214", raised:"#1a1c1f", line:"#2d3035", parchment:"#ececec", muted:"#93979c", brass:"#e2e2e2", rust:"#d95f5f"},
- {name:"Deep Ocean",   ink:"#0b1220", raised:"#121b2e", line:"#233252", parchment:"#e3e9f5", muted:"#8593ad", brass:"#7fa8e8", rust:"#d4636b"},
- {name:"Rose Quartz",  ink:"#171218", raised:"#211824", line:"#382b3c", parchment:"#efe7ee", muted:"#a292a4", brass:"#d494b9", rust:"#cf5454"},
- {name:"Evergreen",    ink:"#0f1512", raised:"#16211b", line:"#28382f", parchment:"#e6ede8", muted:"#8ca396", brass:"#85c29b", rust:"#cf6a55"},
- {name:"Nord",         ink:"#242933", raised:"#2e3440", line:"#434c5e", parchment:"#eceff4", muted:"#96a1b8", brass:"#88c0d0", rust:"#bf616a"},
- {name:"Indigo Dusk",  ink:"#12131f", raised:"#1a1c2c", line:"#2e3150", parchment:"#e7e8f4", muted:"#9094b3", brass:"#96a6f5", rust:"#d4607e"},
- {name:"Terminal",     ink:"#0c1114", raised:"#121a1f", line:"#23323a", parchment:"#dff2f5", muted:"#7f989f", brass:"#45c9dd", rust:"#d65f5f"},
- {name:"Night Sky",    ink:"#0d1117", raised:"#161b22", line:"#30363d", parchment:"#e6edf3", muted:"#8b949e", brass:"#58a6ff", rust:"#f85149"},
- {name:"Dracula",      ink:"#21222c", raised:"#282a36", line:"#3a3d4d", parchment:"#f0f1f4", muted:"#9ea0b0", brass:"#bd93f9", rust:"#ff5555"},
- {name:"Neon Grape",   ink:"#160f1e", raised:"#1f1629", line:"#372a47", parchment:"#efe6f7", muted:"#a292b5", brass:"#e069c8", rust:"#ff6b5e"},
- {name:"Aurora",       ink:"#0b1420", raised:"#121e2c", line:"#23374a", parchment:"#e3eef2", muted:"#86a0ad", brass:"#7ce3c3", rust:"#e2708f"},
- {name:"Steel",        ink:"#131619", raised:"#1b1f24", line:"#2e343b", parchment:"#e8ebee", muted:"#94a0ab", brass:"#aac3d6", rust:"#c96666"},
- {name:"Sapphire",     ink:"#0a0e1a", raised:"#111726", line:"#232c45", parchment:"#e4e8f4", muted:"#8790ad", brass:"#5b84f5", rust:"#e25555"},
- {name:"Mint",         ink:"#0e1412", raised:"#151d1a", line:"#29352f", parchment:"#e5efe9", muted:"#8ba49a", brass:"#98e2be", rust:"#e07068"},
- {name:"Lilac",        ink:"#16161b", raised:"#1e1e25", line:"#333340", parchment:"#ebe9f2", muted:"#9c99ac", brass:"#c6b4ec", rust:"#d96459"},
- {name:"OLED",         ink:"#000000", raised:"#0e0e11", line:"#29292e", parchment:"#f2f2f2", muted:"#8f9298", brass:"#6ab8f7", rust:"#ef5350"},
- {name:"Ocean Fog",    ink:"#101616", raised:"#171f1f", line:"#2b3737", parchment:"#e6eeee", muted:"#8fa5a5", brass:"#9fcfcf", rust:"#cd6a5e"},
- {name:"Raspberry",    ink:"#140f14", raised:"#1d151d", line:"#342637", parchment:"#f0e8f0", muted:"#a795a7", brass:"#e78bb0", rust:"#d64545"}
+ {group:"Dark", name:"Slate & Ice",  ink:"#10151a", raised:"#182028", line:"#2a3441", parchment:"#e6ebef", muted:"#8b98a5", brass:"#89b7d6", rust:"#c05c56"},
+ {group:"Colorful", name:"Violet Night", ink:"#131318", raised:"#1b1b23", line:"#2f2f3c", parchment:"#e9e8f0", muted:"#9795a8", brass:"#a78bfa", rust:"#d16060"},
+ {group:"Colorful", name:"Sea Glass",    ink:"#0e1517", raised:"#152022", line:"#25373a", parchment:"#e2eeec", muted:"#87a09d", brass:"#66c7b4", rust:"#cf6660"},
+ {group:"Dark", name:"Monochrome",   ink:"#111214", raised:"#1a1c1f", line:"#2d3035", parchment:"#ececec", muted:"#93979c", brass:"#e2e2e2", rust:"#d95f5f"},
+ {group:"Dark", name:"Deep Ocean",   ink:"#0b1220", raised:"#121b2e", line:"#233252", parchment:"#e3e9f5", muted:"#8593ad", brass:"#7fa8e8", rust:"#d4636b"},
+ {group:"Colorful", name:"Rose Quartz",  ink:"#171218", raised:"#211824", line:"#382b3c", parchment:"#efe7ee", muted:"#a292a4", brass:"#d494b9", rust:"#cf5454"},
+ {group:"Colorful", name:"Evergreen",    ink:"#0f1512", raised:"#16211b", line:"#28382f", parchment:"#e6ede8", muted:"#8ca396", brass:"#85c29b", rust:"#cf6a55"},
+ {group:"Dark", name:"Nord",         ink:"#242933", raised:"#2e3440", line:"#434c5e", parchment:"#eceff4", muted:"#96a1b8", brass:"#88c0d0", rust:"#bf616a"},
+ {group:"Dark", name:"Indigo Dusk",  ink:"#12131f", raised:"#1a1c2c", line:"#2e3150", parchment:"#e7e8f4", muted:"#9094b3", brass:"#96a6f5", rust:"#d4607e"},
+ {group:"Dark", name:"Terminal",     ink:"#0c1114", raised:"#121a1f", line:"#23323a", parchment:"#dff2f5", muted:"#7f989f", brass:"#45c9dd", rust:"#d65f5f"},
+ {group:"Dark", name:"Night Sky",    ink:"#0d1117", raised:"#161b22", line:"#30363d", parchment:"#e6edf3", muted:"#8b949e", brass:"#58a6ff", rust:"#f85149"},
+ {group:"Colorful", name:"Dracula",      ink:"#21222c", raised:"#282a36", line:"#3a3d4d", parchment:"#f0f1f4", muted:"#9ea0b0", brass:"#bd93f9", rust:"#ff5555"},
+ {group:"Colorful", name:"Neon Grape",   ink:"#160f1e", raised:"#1f1629", line:"#372a47", parchment:"#efe6f7", muted:"#a292b5", brass:"#e069c8", rust:"#ff6b5e"},
+ {group:"Colorful", name:"Aurora",       ink:"#0b1420", raised:"#121e2c", line:"#23374a", parchment:"#e3eef2", muted:"#86a0ad", brass:"#7ce3c3", rust:"#e2708f"},
+ {group:"Dark", name:"Steel",        ink:"#131619", raised:"#1b1f24", line:"#2e343b", parchment:"#e8ebee", muted:"#94a0ab", brass:"#aac3d6", rust:"#c96666"},
+ {group:"Dark", name:"Sapphire",     ink:"#0a0e1a", raised:"#111726", line:"#232c45", parchment:"#e4e8f4", muted:"#8790ad", brass:"#5b84f5", rust:"#e25555"},
+ {group:"Colorful", name:"Mint",         ink:"#0e1412", raised:"#151d1a", line:"#29352f", parchment:"#e5efe9", muted:"#8ba49a", brass:"#98e2be", rust:"#e07068"},
+ {group:"Colorful", name:"Lilac",        ink:"#16161b", raised:"#1e1e25", line:"#333340", parchment:"#ebe9f2", muted:"#9c99ac", brass:"#c6b4ec", rust:"#d96459"},
+ {group:"Dark", name:"OLED",         ink:"#000000", raised:"#0e0e11", line:"#29292e", parchment:"#f2f2f2", muted:"#8f9298", brass:"#6ab8f7", rust:"#ef5350"},
+ {group:"Colorful", name:"Ocean Fog",    ink:"#101616", raised:"#171f1f", line:"#2b3737", parchment:"#e6eeee", muted:"#8fa5a5", brass:"#9fcfcf", rust:"#cd6a5e"},
+ {group:"Colorful", name:"Raspberry",    ink:"#140f14", raised:"#1d151d", line:"#342637", parchment:"#f0e8f0", muted:"#a795a7", brass:"#e78bb0", rust:"#d64545"},
+ {group:"Beige", name:"Beige Mono",  ink:"#171411", raised:"#211d17", line:"#383226", parchment:"#eae0cc", muted:"#a89d87", brass:"#d9cdb2", rust:"#c96a55"},
+ {group:"Beige", name:"Sepia",       ink:"#1b150d", raised:"#251e13", line:"#3d3320", parchment:"#f0e5cf", muted:"#b3a284", brass:"#c9ad83", rust:"#c25b4a"},
+ {group:"Beige", name:"Stone",       ink:"#161513", raised:"#1f1e1a", line:"#34322c", parchment:"#e8e4da", muted:"#a09b8e", brass:"#cfc8b8", rust:"#c56458"},
+ {group:"Beige", name:"Linen",       ink:"#f3ecdd", raised:"#faf5ea", line:"#ded2b8", parchment:"#33291a", muted:"#948972", brass:"#6b5d45", rust:"#b5533c"},
+ {group:"Beige", name:"Latte",       ink:"#f0e9dc", raised:"#f9f4ea", line:"#dbcfb9", parchment:"#3b3220", muted:"#93876f", brass:"#8c6f4a", rust:"#b5533c"},
+ {group:"Beige", name:"Sand",        ink:"#ece5d6", raised:"#f6f1e6", line:"#d6cbb4", parchment:"#2e2a20", muted:"#8f8672", brass:"#57503f", rust:"#b8564a"},
+ {group:"Light", name:"Paper White", ink:"#f7f6f3", raised:"#ffffff", line:"#e0ddd6", parchment:"#26241f", muted:"#8c8880", brass:"#3b6ea5", rust:"#c04f3e"},
+ {group:"Light", name:"Porcelain",   ink:"#f4f6f8", raised:"#ffffff", line:"#dbe2e8", parchment:"#22282e", muted:"#7d8894", brass:"#4a7dab", rust:"#c25454"},
+ {group:"Light", name:"Daylight Mint", ink:"#f2f7f3", raised:"#fbfefb", line:"#d7e3d9", parchment:"#24302a", muted:"#7f9187", brass:"#3e8e63", rust:"#c44f43"},
+ {group:"Light", name:"Light Lilac", ink:"#f5f3f9", raised:"#fdfcff", line:"#e0dbeb", parchment:"#2a2733", muted:"#8b8699", brass:"#7857c9", rust:"#c74e58"},
+ {group:"Light", name:"Sky Day",     ink:"#eef4fa", raised:"#ffffff", line:"#d3e2ef", parchment:"#1f2b36", muted:"#74899c", brass:"#2f7fd1", rust:"#cc4f44"}
 ];
 function hexNum(c){ return parseInt(c.slice(1),16); }
 function blendHex(a,b,t){
@@ -330,23 +346,48 @@ function applyTheme(i){
   s.setProperty("--piptext", rgbaOf(t.parchment, .3));
   s.setProperty("--pipinvline", rgbaOf(t.ink, .35));
   s.setProperty("--pipinvtext", rgbaOf(t.ink, .45));
+  s.setProperty("--track", blendHex(t.muted, t.ink, .78));
   var mt = document.querySelector('meta[name="theme-color"]');
   if(mt) mt.setAttribute("content", t.ink);
-  document.querySelectorAll(".throw").forEach(function(b,j){ b.classList.toggle("on", j===i); });
+  document.querySelectorAll(".throw").forEach(function(b){
+    b.classList.toggle("on", Number(b.dataset.i) === curThemeIdx);
+  });
 }
 function buildThemePanel(){
   var box = document.createElement("div");
   box.className = "themes";
+  var groups = [];
+  THEMES.forEach(function(t){ if(groups.indexOf(t.group) < 0) groups.push(t.group); });
   var h = '<h3>Try a look <span id="thHide">hide</span></h3>'+
           '<button class="thrand" id="thRand">Pick a rando</button>';
-  THEMES.forEach(function(t,i){
-    h += '<button class="throw" data-i="'+i+'" style="background:'+t.raised+';color:'+t.parchment+
-         ';border-color:'+t.line+'">'+
-         '<span class="thsw"><i style="background:'+t.brass+'"></i><i style="background:'+t.rust+'"></i>'+
-         '<i style="background:'+t.parchment+'"></i></span>'+esc(t.name)+'</button>';
+  groups.forEach(function(g){
+    var items = '', count = 0;
+    THEMES.forEach(function(t,i){
+      if(t.group !== g) return;
+      count++;
+      items += '<button class="throw" data-i="'+i+'" style="background:'+t.raised+';color:'+t.parchment+
+               ';border-color:'+t.line+'">'+
+               '<span class="thsw"><i style="background:'+t.brass+'"></i><i style="background:'+t.rust+'"></i>'+
+               '<i style="background:'+t.parchment+'"></i></span>'+esc(t.name)+'</button>';
+    });
+    h += '<button class="thgrp" data-g="'+esc(g)+'"><span><b class="arr">&#9656;</b> '+esc(g)+'</span><i>'+count+'</i></button>'+
+         '<div class="thgbody" data-g="'+esc(g)+'">'+items+'</div>';
   });
   box.innerHTML = h;
   document.body.appendChild(box);
+
+  function openGroup(g){
+    box.querySelectorAll(".thgbody").forEach(function(d){ d.classList.toggle("open", d.dataset.g === g); });
+    box.querySelectorAll(".thgrp").forEach(function(btn){
+      btn.querySelector(".arr").innerHTML = btn.dataset.g === g ? "&#9662;" : "&#9656;";
+    });
+  }
+  box.querySelectorAll(".thgrp").forEach(function(btn){
+    btn.onclick = function(){
+      var open = box.querySelector('.thgbody.open[data-g="'+btn.dataset.g+'"]');
+      openGroup(open ? "" : btn.dataset.g);
+    };
+  });
   box.querySelectorAll(".throw").forEach(function(b){
     b.onclick = function(){
       var i = Number(b.dataset.i);
@@ -360,10 +401,12 @@ function buildThemePanel(){
     while(i === curThemeIdx) i = Math.floor(Math.random()*THEMES.length);
     try { localStorage.setItem(THEME_KEY, String(i)); } catch(e){}
     applyTheme(i);
+    openGroup(THEMES[i].group);
   };
   var saved = 0;
   try { saved = Number(localStorage.getItem(THEME_KEY) || 0) || 0; } catch(e){}
   applyTheme(saved);
+  openGroup((THEMES[saved] || THEMES[0]).group);
 }
 
 /* ---------- gate ---------- */
