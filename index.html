@@ -450,7 +450,8 @@ function syncNow(manual){
   fetch(SYNC_URL, {headers:hdrs})
   .then(function(r){
     if(r.status === 404){ syncSha = null; return null; }
-    if(r.status === 401 || r.status === 403) throw new Error("token rejected — check or renew it");
+    if(r.status === 401) throw new Error("GitHub says the token is invalid — re-copy the exact github_pat value and paste it again");
+    if(r.status === 403) throw new Error("token lacks permission — set Contents to Read and write on the data repo");
     if(!r.ok) throw new Error("pull failed ("+r.status+")");
     return r.json();
   })
@@ -470,6 +471,7 @@ function syncNow(manual){
     return fetch(SYNC_URL, {method:"PUT", headers:hdrs, body:JSON.stringify(body)})
       .then(function(r){
         if(r.status === 409 || r.status === 422){ syncBusy = false; syncSha = null; syncNow(manual); return null; }
+        if(r.status === 404 || r.status === 403) throw new Error("token can't write the data repo — grant it access to "+SYNC_REPO+" with Contents read and write");
         if(!r.ok) throw new Error("push failed ("+r.status+")");
         return r.json();
       })
