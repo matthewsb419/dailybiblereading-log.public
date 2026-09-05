@@ -150,6 +150,13 @@ textarea::placeholder{color:var(--ghost)}
 .thgbody{display:none}
 .thgbody.open{display:block}
 .themes.min .throw,.themes.min .thrand,.themes.min .thgrp,.themes.min .thgbody{display:none}
+.themes.min{max-height:none;overflow:visible}
+.themes.min h3{margin-bottom:0}
+.expbar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;align-items:center;justify-content:center;
+ gap:14px;background:var(--rust);color:var(--parchment);font-size:13px;padding:10px 44px 10px 14px;line-height:1.45;
+ text-align:center}
+.expbar button{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;
+ color:var(--parchment);font-size:20px;cursor:pointer;line-height:1;padding:6px}
 @media (max-width:1080px){
  .themes{left:12px;right:12px;top:auto;bottom:12px;width:auto;display:flex;flex-wrap:wrap;gap:4px;max-height:36vh}
  .themes h3{width:100%;margin-bottom:4px}
@@ -363,12 +370,31 @@ function applyTheme(i){
     b.classList.toggle("on", Number(b.dataset.i) === curThemeIdx);
   });
 }
+function expiryBanner(){
+  if(!ghToken()) return;
+  try { if(sessionStorage.getItem("bibleLog.expDismiss")) return; } catch(e){}
+  var left = Math.round((asDate(TOKEN_EXPIRES) - asDate(keyOf()))/86400000);
+  if(left > 21) return;
+  var d = document.createElement("div");
+  d.className = "expbar";
+  d.innerHTML = '<span>'+
+    (left < 0
+      ? 'Sync token expired '+esc(shortDate(TOKEN_EXPIRES))+' — sync is paused. Log in, open Sync settings, and press &ldquo;How to make a token&rdquo;.'
+      : 'Sync token expires '+esc(shortDate(TOKEN_EXPIRES))+' — '+left+' day'+(left===1?'':'s')+' left. Sync settings &rarr; &ldquo;How to make a token&rdquo;.')+
+    '</span><button id="expX" aria-label="Dismiss">&times;</button>';
+  document.body.appendChild(d);
+  d.querySelector("#expX").onclick = function(){
+    try { sessionStorage.setItem("bibleLog.expDismiss", "1"); } catch(e){}
+    d.parentNode.removeChild(d);
+  };
+}
+
 function buildThemePanel(){
   var box = document.createElement("div");
-  box.className = "themes";
+  box.className = "themes min";
   var groups = [];
   THEMES.forEach(function(t){ if(groups.indexOf(t.group) < 0) groups.push(t.group); });
-  var h = '<h3>Try a look <span id="thHide">hide</span></h3>'+
+  var h = '<h3>Try a look <span id="thHide">show</span></h3>'+
           '<button class="thrand" id="thRand">Pick a rando</button>';
   groups.forEach(function(g){
     var items = '', count = 0;
@@ -405,7 +431,11 @@ function buildThemePanel(){
       applyTheme(i);
     };
   });
-  document.getElementById("thHide").onclick = function(){ box.classList.toggle("min"); };
+  var hideBtn = document.getElementById("thHide");
+  hideBtn.onclick = function(){
+    box.classList.toggle("min");
+    hideBtn.textContent = box.classList.contains("min") ? "show" : "hide";
+  };
   document.getElementById("thRand").onclick = function(){
     var i = curThemeIdx;
     while(i === curThemeIdx) i = Math.floor(Math.random()*THEMES.length);
@@ -821,18 +851,6 @@ function render(){
       html += '</section>';
     }
 
-    if(ghToken()){
-      var expLeft = Math.round((asDate(TOKEN_EXPIRES) - asDate(keyOf()))/86400000);
-      if(expLeft < 0){
-        html += '<p class="foot" style="color:var(--rust)">Your sync token expired on '+
-                esc(shortDate(TOKEN_EXPIRES))+' — sync is paused. Open Sync settings and press '+
-                '&ldquo;How to make a token&rdquo; for step-by-step instructions.</p>';
-      } else if(expLeft <= 21){
-        html += '<p class="foot" style="color:var(--rust)">Heads up: your sync token expires '+
-                esc(shortDate(TOKEN_EXPIRES))+' ('+expLeft+' day'+(expLeft===1?"":"s")+' left). '+
-                'Open Sync settings &rarr; &ldquo;How to make a token&rdquo; for the step-by-step guide.</p>';
-      }
-    }
     html += '<p class="foot">'+
             (ghToken() ? 'Syncing with a private GitHub repo — your other devices pick up changes when they open the app. '
                        : 'Saved in this browser on this device. Set up sync to share entries with your phone. ')+
@@ -1129,6 +1147,7 @@ function renderLock(){
 
 if(isUnlocked()) boot(); else renderLock();
 buildThemePanel();
+expiryBanner();
 </script>
 </body>
 </html>
