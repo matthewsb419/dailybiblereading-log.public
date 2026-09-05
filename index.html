@@ -493,7 +493,10 @@ function syncNow(manual){
       remoteText = b64dec(j.content);
       var changed = false;
       try { changed = mergeRemote(JSON.parse(remoteText)); } catch(e){}
-      if(changed){ save(); render(); }
+      if(changed){
+        if(page === "today" && !document.querySelector("textarea:focus")) viewDay = nextUnloggedDay();
+        save(); render();
+      }
     }
     var localText = JSON.stringify(state);
     if(localText === remoteText){ syncBusy = false; setSyncStatus("Synced"); return null; }
@@ -519,7 +522,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
-var APP_VER = "v13";
+var APP_VER = "v14";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -604,8 +607,11 @@ function loggedDays(){
   return Object.keys(state.entries).map(Number).sort(function(a,b){return a-b;});
 }
 function nextUnloggedDay(){
-  var ds = loggedDays();
-  return ds.length ? Math.min(ds[ds.length-1]+1, PLAN.length) : 1;
+  // first plan day with no written answers — P/M-only marks on a missed day don't count as read
+  for(var d=1; d<=PLAN.length; d++){
+    if(answered(state.entries[d]) === 0) return d;
+  }
+  return PLAN.length;
 }
 
 /* ---------- scoring (by calendar date) ---------- */
