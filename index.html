@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#161310">
+<meta name="theme-color" content="#10151a">
 <title>Reading Log</title>
 <style>
-:root{--ink:#161310;--raised:#201b15;--line:#342d22;--parchment:#eae2cf;--muted:#9a8f7a;--brass:#c9a25a;--rust:#b0543a}
+:root{--ink:#10151a;--raised:#182028;--line:#2a3441;--parchment:#e6ebef;--muted:#8b98a5;--brass:#89b7d6;--rust:#c05c56}
 *{box-sizing:border-box}
 body{margin:0;background:var(--ink);color:var(--parchment);
  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
@@ -43,7 +43,7 @@ textarea{width:100%;background:var(--ink);border:1px solid var(--line);border-ra
  font-size:16px;line-height:1.5;padding:10px 11px;resize:vertical;min-height:76px;
  font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif}
 textarea:focus{outline:2px solid var(--brass);outline-offset:1px;border-color:transparent}
-textarea::placeholder{color:#574e3e}
+textarea::placeholder{color:#475462}
 .cardfoot{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .status{font-size:12px;color:var(--muted);min-height:16px;line-height:1.4}
 .status.err{color:var(--rust)}
@@ -64,10 +64,10 @@ textarea::placeholder{color:#574e3e}
 .verdict.on{color:var(--brass)}
 .mgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:18px 0 12px}
 .mgrid>span{aspect-ratio:1;border-radius:5px;font-size:11px;display:flex;align-items:center;justify-content:center;
- font-variant-numeric:tabular-nums;border:1px solid var(--line);color:#6a604c;position:relative;padding-bottom:9px}
+ font-variant-numeric:tabular-nums;border:1px solid var(--line);color:#4d5a67;position:relative;padding-bottom:9px}
 .mgrid>span.complete{background:var(--brass);border-color:var(--brass);color:var(--ink);font-weight:600}
 .mgrid>span.partial{border-color:var(--brass);color:var(--brass)}
-.mgrid>span.out{border-color:transparent;color:#2b251b;padding-bottom:0}
+.mgrid>span.out{border-color:transparent;color:#232b33;padding-bottom:0}
 .mgrid>span.blank{border-color:transparent;padding-bottom:0}
 .mgrid.dowrow{margin:16px 0 0}
 .mgrid.cal{margin-top:6px}
@@ -80,12 +80,12 @@ textarea::placeholder{color:#574e3e}
 .pips{position:absolute;bottom:3px;left:0;right:0;display:flex;justify-content:center;gap:3px}
 .pip{width:11px;height:11px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;
  font-size:7px;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
- border:1px solid rgba(234,226,207,.2);color:rgba(234,226,207,.3)}
+ border:1px solid rgba(230,235,239,.2);color:rgba(230,235,239,.3)}
 .pip.ok{background:var(--brass);border-color:var(--brass);color:var(--ink)}
 .pip.no{background:var(--rust);border-color:var(--rust);color:var(--parchment)}
-.mgrid>span.complete .pip{border-color:rgba(22,19,16,.35);color:rgba(22,19,16,.45)}
+.mgrid>span.complete .pip{border-color:rgba(16,21,26,.35);color:rgba(16,21,26,.45)}
 .mgrid>span.complete .pip.ok{background:var(--ink);border-color:var(--ink);color:var(--brass)}
-.mgrid>span.complete .pip.no{background:#7e341f;border-color:#7e341f;color:var(--parchment)}
+.mgrid>span.complete .pip.no{background:#8c3530;border-color:#8c3530;color:var(--parchment)}
 .legend{display:flex;gap:14px;font-size:11px;color:var(--muted);flex-wrap:wrap}
 .legend span{display:flex;align-items:center;gap:5px}
 .sw{width:10px;height:10px;border-radius:3px;border:1px solid var(--line);display:inline-block}
@@ -133,12 +133,12 @@ textarea::placeholder{color:#574e3e}
 .lockmsg{font-size:12px;color:var(--rust);min-height:16px;margin-top:10px}
 .pmwrap{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
  margin:2px 0 14px;padding:12px 2px 0;border-top:1px solid var(--line)}
-.pmhead{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#574e3e}
+.pmhead{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#475462}
 .pmset{display:flex;gap:16px;align-items:center}
 .pmitem{display:flex;align-items:center;gap:7px}
 .pmlab{font-size:12px;color:var(--muted)}
 .seg{display:flex;border:1px solid var(--line);border-radius:16px;overflow:hidden}
-.seg button{background:transparent;border:none;color:#574e3e;font-size:12px;padding:5px 13px;cursor:pointer;
+.seg button{background:transparent;border:none;color:#475462;font-size:12px;padding:5px 13px;cursor:pointer;
  letter-spacing:.03em;transition:background .15s,color .15s}
 .seg button+button{border-left:1px solid var(--line)}
 .seg button.sel{font-weight:600}
