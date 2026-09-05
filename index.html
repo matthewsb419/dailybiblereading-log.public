@@ -519,6 +519,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
+var APP_VER = "v13";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -855,7 +856,8 @@ function render(){
             (ghToken() ? 'Syncing with a private GitHub repo — your other devices pick up changes when they open the app. '
                        : 'Saved in this browser on this device. Set up sync to share entries with your phone. ')+
             'Backups still work anytime.'+
-            (ghToken() ? ' <button class="link" id="syncCfg">Sync settings</button>' : '')+'</p>';
+            (ghToken() ? ' <button class="link" id="syncCfg">Sync settings</button>' : '')+
+            ' · '+APP_VER+'</p>';
   }
 
   if(page === "record"){
@@ -1129,6 +1131,7 @@ function renderLock(){
     '<input type="password" id="gate" autocomplete="off" placeholder="Password">'+
     '<button id="gateGo">Open</button>'+
     '<div class="lockmsg" id="gateMsg"></div>'+
+    '<div class="foot" style="opacity:.55;margin-top:16px">'+APP_VER+'</div>'+
     '</div></div>';
   var input = document.getElementById("gate");
   function attempt(){
