@@ -136,6 +136,9 @@ textarea::placeholder{color:var(--ghost)}
 .thsw{display:flex;gap:3px;flex:none}
 .thsw i{width:12px;height:12px;border-radius:4px;display:block}
 .themes.min .throw{display:none}
+.thrand{display:block;width:100%;margin-bottom:8px;padding:8px 10px;border-radius:7px;border:1px dashed var(--brass);
+ background:transparent;color:var(--brass);font-size:12px;letter-spacing:.04em;cursor:pointer}
+.themes.min .thrand{display:none}
 @media (max-width:1080px){
  .themes{left:12px;right:12px;top:auto;bottom:12px;width:auto;display:flex;flex-wrap:wrap;gap:4px;max-height:36vh}
  .themes h3{width:100%;margin-bottom:4px}
@@ -287,7 +290,17 @@ var THEMES = [
  {name:"Nord",         ink:"#242933", raised:"#2e3440", line:"#434c5e", parchment:"#eceff4", muted:"#96a1b8", brass:"#88c0d0", rust:"#bf616a"},
  {name:"Indigo Dusk",  ink:"#12131f", raised:"#1a1c2c", line:"#2e3150", parchment:"#e7e8f4", muted:"#9094b3", brass:"#96a6f5", rust:"#d4607e"},
  {name:"Terminal",     ink:"#0c1114", raised:"#121a1f", line:"#23323a", parchment:"#dff2f5", muted:"#7f989f", brass:"#45c9dd", rust:"#d65f5f"},
- {name:"Night Sky",    ink:"#0d1117", raised:"#161b22", line:"#30363d", parchment:"#e6edf3", muted:"#8b949e", brass:"#58a6ff", rust:"#f85149"}
+ {name:"Night Sky",    ink:"#0d1117", raised:"#161b22", line:"#30363d", parchment:"#e6edf3", muted:"#8b949e", brass:"#58a6ff", rust:"#f85149"},
+ {name:"Dracula",      ink:"#21222c", raised:"#282a36", line:"#3a3d4d", parchment:"#f0f1f4", muted:"#9ea0b0", brass:"#bd93f9", rust:"#ff5555"},
+ {name:"Neon Grape",   ink:"#160f1e", raised:"#1f1629", line:"#372a47", parchment:"#efe6f7", muted:"#a292b5", brass:"#e069c8", rust:"#ff6b5e"},
+ {name:"Aurora",       ink:"#0b1420", raised:"#121e2c", line:"#23374a", parchment:"#e3eef2", muted:"#86a0ad", brass:"#7ce3c3", rust:"#e2708f"},
+ {name:"Steel",        ink:"#131619", raised:"#1b1f24", line:"#2e343b", parchment:"#e8ebee", muted:"#94a0ab", brass:"#aac3d6", rust:"#c96666"},
+ {name:"Sapphire",     ink:"#0a0e1a", raised:"#111726", line:"#232c45", parchment:"#e4e8f4", muted:"#8790ad", brass:"#5b84f5", rust:"#e25555"},
+ {name:"Mint",         ink:"#0e1412", raised:"#151d1a", line:"#29352f", parchment:"#e5efe9", muted:"#8ba49a", brass:"#98e2be", rust:"#e07068"},
+ {name:"Lilac",        ink:"#16161b", raised:"#1e1e25", line:"#333340", parchment:"#ebe9f2", muted:"#9c99ac", brass:"#c6b4ec", rust:"#d96459"},
+ {name:"OLED",         ink:"#000000", raised:"#0e0e11", line:"#29292e", parchment:"#f2f2f2", muted:"#8f9298", brass:"#6ab8f7", rust:"#ef5350"},
+ {name:"Ocean Fog",    ink:"#101616", raised:"#171f1f", line:"#2b3737", parchment:"#e6eeee", muted:"#8fa5a5", brass:"#9fcfcf", rust:"#cd6a5e"},
+ {name:"Raspberry",    ink:"#140f14", raised:"#1d151d", line:"#342637", parchment:"#f0e8f0", muted:"#a795a7", brass:"#e78bb0", rust:"#d64545"}
 ];
 function hexNum(c){ return parseInt(c.slice(1),16); }
 function blendHex(a,b,t){
@@ -301,8 +314,10 @@ function rgbaOf(c,a){
   var A = hexNum(c);
   return "rgba("+((A>>16)&255)+","+((A>>8)&255)+","+(A&255)+","+a+")";
 }
+var curThemeIdx = 0;
 function applyTheme(i){
   var t = THEMES[i] || THEMES[0];
+  curThemeIdx = THEMES[i] ? i : 0;
   var s = document.documentElement.style;
   s.setProperty("--ink", t.ink); s.setProperty("--raised", t.raised); s.setProperty("--line", t.line);
   s.setProperty("--parchment", t.parchment); s.setProperty("--muted", t.muted);
@@ -322,7 +337,8 @@ function applyTheme(i){
 function buildThemePanel(){
   var box = document.createElement("div");
   box.className = "themes";
-  var h = '<h3>Try a look <span id="thHide">hide</span></h3>';
+  var h = '<h3>Try a look <span id="thHide">hide</span></h3>'+
+          '<button class="thrand" id="thRand">Pick a rando</button>';
   THEMES.forEach(function(t,i){
     h += '<button class="throw" data-i="'+i+'" style="background:'+t.raised+';color:'+t.parchment+
          ';border-color:'+t.line+'">'+
@@ -339,6 +355,12 @@ function buildThemePanel(){
     };
   });
   document.getElementById("thHide").onclick = function(){ box.classList.toggle("min"); };
+  document.getElementById("thRand").onclick = function(){
+    var i = curThemeIdx;
+    while(i === curThemeIdx) i = Math.floor(Math.random()*THEMES.length);
+    try { localStorage.setItem(THEME_KEY, String(i)); } catch(e){}
+    applyTheme(i);
+  };
   var saved = 0;
   try { saved = Number(localStorage.getItem(THEME_KEY) || 0) || 0; } catch(e){}
   applyTheme(saved);
