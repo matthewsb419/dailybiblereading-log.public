@@ -494,7 +494,7 @@ function syncNow(manual){
       var changed = false;
       try { changed = mergeRemote(JSON.parse(remoteText)); } catch(e){}
       if(changed){
-        if(page === "today" && !document.querySelector("textarea:focus")) viewDay = nextUnloggedDay();
+        if(page === "today" && !document.querySelector("textarea:focus")) viewDay = landingDay();
         save(); render();
       }
     }
@@ -522,7 +522,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
-var APP_VER = "v14";
+var APP_VER = "v15";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -612,6 +612,15 @@ function nextUnloggedDay(){
     if(answered(state.entries[d]) === 0) return d;
   }
   return PLAN.length;
+}
+function landingDay(){
+  // a day written TODAY stays on screen until the calendar rolls over
+  var today = keyOf(), stay = 0;
+  Object.keys(state.entries).forEach(function(k){
+    var e = state.entries[k];
+    if(e && e.date === today && answered(e) > 0 && Number(k) > stay) stay = Number(k);
+  });
+  return stay || nextUnloggedDay();
 }
 
 /* ---------- scoring (by calendar date) ---------- */
@@ -1123,7 +1132,7 @@ document.addEventListener("visibilitychange", function(){
 
 function boot(){
   load();
-  viewDay = nextUnloggedDay();
+  viewDay = landingDay();
   render();
   syncNow(false);
 }
