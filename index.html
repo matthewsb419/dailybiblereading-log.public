@@ -75,6 +75,10 @@ textarea::placeholder{color:var(--ghost)}
 .mgrid>span.partial{border-color:var(--brass);color:var(--brass)}
 .mgrid>span.out{border-color:transparent;color:var(--outnum);padding-bottom:0}
 .mgrid>span.blank{border-color:transparent;padding-bottom:0}
+.mgrid>span .pd{position:absolute;top:3px;right:4px;font-size:9px;line-height:1;font-weight:500;color:var(--muted);opacity:.85}
+.mgrid>span.partial .pd{color:var(--brass)}
+.mgrid>span.complete .pd{color:var(--ink);opacity:.7}
+.legend .pdeg{font-size:8px;font-weight:500;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:1px 3px;margin-right:4px}
 .mgrid.dowrow{margin:16px 0 0}
 .mgrid.cal{margin-top:6px}
 .mgrid>span.dh{aspect-ratio:auto;border:none;padding:0;color:var(--muted);font-size:10px;letter-spacing:.08em;opacity:.75}
@@ -522,7 +526,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
-var APP_VER = "v16";
+var APP_VER = "v17";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -634,6 +638,17 @@ function dateMap(){
     if(!cur || answered(e) > answered(cur)) m[e.date] = e;
   });
   return m;
+}
+function planDayMap(){
+  // calendar date -> plan day number of the entry shown on that date (mirrors dateMap)
+  var best = {}, out = {};
+  Object.keys(state.entries).forEach(function(k){
+    var e = state.entries[k];
+    if(!e.date) return;
+    var cur = best[e.date];
+    if(!cur || answered(e) > answered(cur)){ best[e.date] = e; out[e.date] = Number(k); }
+  });
+  return out;
 }
 function firstDate(){
   var ds = Object.keys(dateMap()).sort();
@@ -938,6 +953,7 @@ function render(){
       html += '<div class="mgrid dowrow">';
       ["S","M","T","W","T","F","S"].forEach(function(x){ html += '<span class="dh">'+x+'</span>'; });
       html += '</div><div class="mgrid cal">';
+      var pdm = planDayMap(), todayKey = keyOf(), curD = currentDay();
       var lead = new Date(viewY, viewM-1, 1).getDay();
       for(var bl=0; bl<lead; bl++) html += '<span class="blank"></span>';
       for(var d=1; d<=daysInMonth(viewY,viewM); d++){
@@ -946,14 +962,17 @@ function render(){
         var inR = tm && d>=tm.first && d<=tm.last;
         var cls = inR ? tm.marks[d] : ((pv||mv) ? "missed" : "out");
         var pips = cls!=="out" ? '<span class="pips">'+pip(pv,"P")+pip(mv,"M")+'</span>' : '';
-        html += '<span class="'+cls+'">'+d+pips+'</span>';
+        var pdn = pdm[dk] || (dk===todayKey && cls!=="out" ? curD : 0);
+        var pdTag = pdn ? '<span class="pd" title="Reading day '+pdn+'">'+pdn+'</span>' : '';
+        html += '<span class="'+cls+'">'+d+pdTag+pips+'</span>';
       }
       html += '</div><div class="legend">'+
               '<span><i class="sw c"></i>All three</span>'+
               '<span><i class="sw p"></i>Partial</span>'+
               '<span><i class="sw"></i>Missed</span>'+
               '<span><b class="pip ok">P</b>No</span>'+
-              '<span><b class="pip no">M</b>Yes</span></div></section>';
+              '<span><b class="pip no">M</b>Yes</span>'+
+              '<span><b class="pdeg">8</b>Reading day</span></div></section>';
 
       var weekRow = function(lab, days, n, elapsed, pct){
         var dots = '';
