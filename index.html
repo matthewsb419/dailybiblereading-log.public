@@ -494,7 +494,7 @@ function syncNow(manual){
       var changed = false;
       try { changed = mergeRemote(JSON.parse(remoteText)); } catch(e){}
       if(changed){
-        if(page === "today" && !document.querySelector("textarea:focus")) viewDay = landingDay();
+        if(page === "today" && !document.querySelector("textarea:focus")) viewDay = currentDay();
         save(); render();
       }
     }
@@ -522,7 +522,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
-var APP_VER = "v15";
+var APP_VER = "v16";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -613,14 +613,15 @@ function nextUnloggedDay(){
   }
   return PLAN.length;
 }
-function landingDay(){
-  // a day written TODAY stays on screen until the calendar rolls over
-  var today = keyOf(), stay = 0;
-  Object.keys(state.entries).forEach(function(k){
-    var e = state.entries[k];
-    if(e && e.date === today && answered(e) > 0 && Number(k) > stay) stay = Number(k);
-  });
-  return stay || nextUnloggedDay();
+function currentDay(){
+  // today's working day: the first day that is unwritten OR was written today.
+  // Writing ahead (posts for later days) never moves this until the calendar rolls over.
+  var today = keyOf();
+  for(var d=1; d<=PLAN.length; d++){
+    var e = state.entries[d];
+    if(!e || answered(e) === 0 || e.date === today) return d;
+  }
+  return PLAN.length;
 }
 
 /* ---------- scoring (by calendar date) ---------- */
@@ -797,16 +798,21 @@ function render(){
               '<textarea id="'+q.id+'" data-q="'+q.id+'" placeholder="\u2014">'+esc(entry[q.id]||"")+'</textarea></div>';
     });
 
-    html += '<div class="pmwrap"><span class="pmhead">Yesterday</span><div class="pmset">';
-    TRACKERS.forEach(function(t){
-      var v = entry[t.id];
-      html += '<div class="pmitem"><span class="pmlab">'+t.label+'</span>'+
-              '<div class="seg" data-t="'+t.id+'">'+
-              '<button data-v="no"'+(v==="no"?' class="sel"':'')+'>No</button>'+
-              '<button data-v="yes"'+(v==="yes"?' class="sel"':'')+'>Yes</button>'+
-              '</div></div>';
-    });
-    html += '</div></div>';
+    // P/M is asked once per calendar day (on the current day) and on past-dated
+    // days for backfill — never on days being read ahead.
+    var pmAllowed = viewDay === currentDay() || (entry.date && entry.date < keyOf());
+    if(pmAllowed){
+      html += '<div class="pmwrap"><span class="pmhead">Yesterday</span><div class="pmset">';
+      TRACKERS.forEach(function(t){
+        var v = entry[t.id];
+        html += '<div class="pmitem"><span class="pmlab">'+t.label+'</span>'+
+                '<div class="seg" data-t="'+t.id+'">'+
+                '<button data-v="no"'+(v==="no"?' class="sel"':'')+'>No</button>'+
+                '<button data-v="yes"'+(v==="yes"?' class="sel"':'')+'>Yes</button>'+
+                '</div></div>';
+      });
+      html += '</div></div>';
+    }
 
     var n = answered(entry);
     html += '<div class="cardfoot"><div id="status" class="status'+(statusErr?" err":"")+'">'+
@@ -1093,7 +1099,9 @@ function writeDraft(){
     if(node.value.trim()) any = true;
   });
   TRACKERS.forEach(function(t){
-    var sel = document.querySelector('.seg[data-t="'+t.id+'"] button.sel');
+    var seg = document.querySelector('.seg[data-t="'+t.id+'"]');
+    if(!seg){ if(e[t.id]) any = true; return; } // inputs not shown for this day — keep stored values
+    var sel = seg.querySelector("button.sel");
     if(sel){ e[t.id] = sel.dataset.v; any = true; }
     else delete e[t.id];
   });
@@ -1132,7 +1140,7 @@ document.addEventListener("visibilitychange", function(){
 
 function boot(){
   load();
-  viewDay = landingDay();
+  viewDay = currentDay();
   render();
   syncNow(false);
 }
