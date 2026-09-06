@@ -217,6 +217,21 @@ textarea::placeholder{color:var(--ghost)}
  color:var(--brass);margin-left:7px}
 .mrow4.hd{border-bottom:none;padding:0 2px 2px}
 .mrow4.hd span{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:right}
+.xc{margin:4px 0 16px;padding:13px 14px;border:1px dashed var(--brass);border-radius:10px}
+.xc.done{border-style:solid}
+.xchead{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.xctag{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--brass)}
+.xcopt{font-size:11px;color:var(--muted);flex-shrink:0}
+.xcref{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:20px;color:var(--brass);
+ line-height:1.15;margin-top:7px}
+.xcmeta{font-size:11px;color:var(--muted);margin-top:3px}
+.xcq{font-size:14px;line-height:1.5;margin:11px 0 8px}
+.xc textarea{min-height:64px}
+.xclock{margin:4px 0 16px;padding:11px 14px;border:1px dashed var(--line);border-radius:10px;
+ font-size:12px;color:var(--ghost);line-height:1.45}
+.ecsum{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:4px}
+.ecsum .det{font-size:12px;color:var(--muted);line-height:1.45}
+.ecsum .apct{flex-shrink:0}
 </style>
 </head>
 <body>
@@ -526,7 +541,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
-var APP_VER = "v17";
+var APP_VER = "v18";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -552,6 +567,190 @@ var QUESTIONS = [
   {id:"stood", prompt:"What stood out or confused me?"},
   {id:"today", prompt:"What do I do with it today?"}
 ];
+
+/* ---------- extra credit: 1 Timothy, one chapter a day ---------- */
+// Optional daily add-on. The chapter cycles 1..6 on repeat from EC_START through EC_END,
+// so each chapter comes back around every six days. The question is keyed to that chapter's
+// occurrence number (not the calendar week), which guarantees no repeated question until the
+// bank runs out. 19 cycles fall between Sep 6 and Christmas Eve; the bank holds 20 per chapter.
+var EC_START = "2026-09-06";
+var EC_END   = "2026-12-24";
+var EC_CYCLE = 6;
+
+var EC_QUESTIONS = [
+ [ // 1 Timothy 1
+  "Paul says the goal of his charge is love that issues from a pure heart, a good conscience, and a sincere faith (1:5). Which of those three is weakest in me right now?",
+  "Verse 15 calls Paul the foremost of sinners — present tense, years after his conversion. Where am I tempted to talk about my sin only in the past tense?",
+  "Paul warns against myths and endless genealogies that promote speculation rather than stewardship (1:4). What do I spend religious energy on that produces nothing?",
+  "Paul received mercy because he acted ignorantly in unbelief (1:13). Where has God been more patient with my ignorance than I have been with someone else's?",
+  "The law is not laid down for the just but for the lawless (1:9). What rule am I keeping to prove something rather than to love someone?",
+  "Read the doxology in 1:17 slowly — King of ages, immortal, invisible, the only God. Which word there is hardest for me to actually believe today?",
+  "Paul was appointed to service though he had been a blasphemer and a persecutor (1:12–13). What part of my past do I still think disqualifies me?",
+  "Some swerved from love into vain discussion (1:6). What conversation of mine lately was all heat and no light?",
+  "Timothy is told to wage the good warfare in line with the prophecies made about him (1:18). What has God already said about me that I should fight from rather than fight for?",
+  "Faith and a good conscience are held together; let go of one and the other shipwrecks (1:19). Is my conscience flagging something I have been calling a small thing?",
+  "Paul names Hymenaeus and Alexander out loud, and says the aim is that they learn (1:20). What do I make of a discipline meant to teach rather than to destroy?",
+  "Christ Jesus came into the world to save sinners (1:15). If that one sentence were all I believed today, what would change about the next 24 hours?",
+  "Paul calls himself a display of Christ's perfect patience (1:16). Who is watching my life as an example, whether I invited them to or not?",
+  "Some want to be teachers of the law without understanding what they say (1:7). Where do I speak with more confidence than I have earned?",
+  "Paul thanks Christ for judging him faithful (1:12). Do I believe God sees me as trustworthy, or only as forgiven?",
+  "The letter opens with Paul asking Timothy to stay in Ephesus (1:3) — a hard place. What has God asked me to stay in that I would rather leave?",
+  "Verse 11 calls it the gospel of the glory of the blessed God. Where has good news quietly become mostly a set of rules to me?",
+  "Paul lists the lawless in 1:9–10 without flinching or softening. What sin have I stopped naming plainly in my own life?",
+  "Paul's whole ministry runs on grace he did not earn (1:14). Whom am I still making earn my grace?",
+  "Timothy is charged to hold the line in a church full of confident wrong voices. Where do I need courage this week to say something unpopular and true?"
+ ],
+ [ // 1 Timothy 2
+  "Paul puts prayer first of all (2:1). What did I actually put first this morning?",
+  "We are told to pray for kings and all who are in high positions (2:2). Who in authority do I criticize more often than I pray for? Pray for them now.",
+  "God desires all people to be saved and to come to the knowledge of the truth (2:4). Is there anyone I have quietly crossed off that list?",
+  "There is one mediator between God and men (2:5). Where am I trying to mediate for myself — cleaning up before I will come to him?",
+  "The aim is a peaceful and quiet life, godly and dignified in every way (2:2). What in my life is loud right now, and is it loud for a good reason?",
+  "Christ gave himself as a ransom for all (2:6). What did that ransom cost, and how casually did I treat it this week?",
+  "Men are to pray lifting holy hands without anger or quarreling (2:8). Whose face came to mind just now? What would praying for them cost me?",
+  "Paul distinguishes supplications, prayers, intercessions, and thanksgivings (2:1). Which of the four has gone missing from my praying?",
+  "Verse 10 says to adorn yourself with good works. What am I adorning myself with — what do I want people to notice about me first?",
+  "This kind of praying is called good and pleasing in the sight of God our Savior (2:3). Do I pray as though God enjoys hearing from me?",
+  "Learn quietly with all submissiveness (2:11). When did I last learn something in a posture of receiving instead of arguing?",
+  "Paul reaches back to Adam and Eve to ground his instruction (2:13–14). What does it mean that the church's order is rooted in a story and not only a rule?",
+  "Modesty and self-control are named in the same breath (2:9). Where does my spending or my appearance say something I would not say out loud?",
+  "Paul insists he is telling the truth and not lying (2:7). Who needs me to tell them the truth this week?",
+  "Intercession means standing between someone and God on their behalf. Whose name will I carry into prayer every day this week?",
+  "This chapter puts the whole world in view — all people, all positions (2:1–4). How small has my prayer list gotten?",
+  "Verse 15 speaks of continuing in faith and love and holiness, with self-control. Which of those four do I most need continued in, not merely started?",
+  "Paul wants believers praying in every place (2:8). Name a place I never pray — the car, the desk, the kitchen sink — and claim it this week.",
+  "If God is not willing that any should perish, what does my patience with difficult people say about how much I resemble him?",
+  "Which is easier for me: telling God what I want, or thanking him for what he has already done? Do the harder one now, in writing."
+ ],
+ [ // 1 Timothy 3
+  "Nearly every qualification in 3:2–7 is character, not skill. Which one would my closest friends say I am weakest in?",
+  "An overseer must be hospitable (3:2). When did I last open my home or my table to someone who could not return the favor?",
+  "He must manage his own household well (3:4–5). What is the true state of the thing I am responsible for that no one else sees?",
+  "Verse 7 requires being well thought of by outsiders. What do the people at work or next door actually think of me?",
+  "A leader must be not quarrelsome (3:3). What am I arguing about right now that I could simply let go?",
+  "A recent convert may become puffed up with conceit (3:6). Where has a little success made me less teachable?",
+  "Deacons must hold the mystery of the faith with a clear conscience (3:9). Is there a gap between what I profess and what I do in private?",
+  "Paul says let them first be tested (3:10). What is God testing in me right now, and am I treating it as a test or as a nuisance?",
+  "Not a lover of money appears in both lists (3:3, 3:8). Where does my bank statement disagree with my confession of faith?",
+  "The church is a pillar and buttress of the truth (3:15). What does that image ask of the way I talk about my church?",
+  "Verse 1 calls oversight a noble task. Is there a form of service I have avoided because it looked thankless rather than noble?",
+  "Sober-minded, self-controlled, respectable (3:2) — pick one and name the specific thing that breaks it in me. It is usually one thing.",
+  "Not double-tongued (3:8). Do I say the same thing about a person to their face that I say behind their back?",
+  "Paul is writing about how one ought to behave in the household of God (3:15). If church is a household, am I acting like family or like a guest?",
+  "Those who serve well gain a good standing and great confidence in the faith (3:13). Where has serving actually grown my faith?",
+  "Read 3:16 aloud — the six lines about Christ. Which line do I most need to be true this week?",
+  "Able to teach (3:2) is the one skill in a list of virtues. Who could I explain the gospel to plainly, in my own words, today?",
+  "Verse 11 asks for people who are not slanderers. What did I repeat this week that I had no business repeating?",
+  "Paul assumes the church is being watched by outsiders. What one habit would I change if I knew a skeptical neighbor were watching?",
+  "Great indeed is the mystery of godliness (3:16). Where have I made faith too tidy and lost the wonder of it?"
+ ],
+ [ // 1 Timothy 4
+  "Train yourself for godliness (4:7). What would training look like this week — not a feeling, an actual practice?",
+  "Bodily training is of some value; godliness is of value in every way (4:8). Compare the hours honestly: which gets more of my week?",
+  "Everything created by God is good and is to be received with thanksgiving (4:4). What good gift have I been enjoying without thanking anyone for it?",
+  "Let no one despise you for your youth (4:12). Where do I let someone else's low opinion of me shrink what God asked me to do?",
+  "Paul names five areas of example: speech, conduct, love, faith, purity (4:12). Which is weakest in me, and who is affected by it?",
+  "Timothy is told to devote himself to the public reading of Scripture (4:13). When was Scripture last read out loud in my house?",
+  "Do not neglect the gift you have (4:14). What has God given me that I have let go quiet?",
+  "Keep a close watch on yourself and on the teaching (4:16). Which of those two do I neglect — my life, or what I believe?",
+  "Some will depart from the faith by devoting themselves to deceitful spirits (4:1). What voices am I devoted to that I have never examined?",
+  "Verse 2 describes consciences seared as with a hot iron. What have I done often enough that it no longer bothers me?",
+  "Practice these things, immerse yourself in them, so that all may see your progress (4:15). Is there visible progress in me over the last year? In what?",
+  "Paul rejects a false holiness that forbids marriage and certain foods (4:3). Where do I confuse being restrictive with being holy?",
+  "We toil and strive because our hope is set on the living God (4:10). What am I working hard at, and what is my hope actually set on?",
+  "Have nothing to do with irreverent, silly myths (4:7). What do I consume that leaves me spiritually dull?",
+  "Timothy is a young man told to lead people older than himself. Where is God asking me to step up before I feel ready?",
+  "Godliness holds promise for the present life and also for the life to come (4:8). Name one way obedience has already paid off in this life.",
+  "Be trained in the words of the faith and the good doctrine you have followed (4:6). What is one truth I know well enough to feed someone else with?",
+  "By doing this you will save both yourself and your hearers (4:16). Who is listening to me? Name them.",
+  "Paul pairs teaching with commanding (4:11). Where have I softened something God says plainly because I feared the reaction?",
+  "If someone tracked my last month, would they see drift or training? Name one concrete change for the next seven days."
+ ],
+ [ // 1 Timothy 5
+  "Older men as fathers, younger as brothers, older women as mothers, younger as sisters (5:1–2). Which of those four do I handle worst?",
+  "Correct without harshness — do not rebuke an older man but encourage him (5:1). When did I last correct someone, and how did it land?",
+  "If anyone does not provide for his relatives he has denied the faith (5:8). Who in my family have I neglected while staying busy with good things?",
+  "The true widow continues in supplications and prayers night and day (5:5). What does my own need drive me to — prayer, or distraction?",
+  "She who is self-indulgent is dead even while she lives (5:6). What indulgence is quietly deadening me?",
+  "Children and grandchildren should make some return to their parents (5:4). What do I owe my parents that I have not paid?",
+  "Verse 10 lists hidden, unglamorous work: raising children, hospitality, washing feet, caring for the afflicted. Which unglamorous work is mine this week?",
+  "Paul warns about drifting into idleness, gossip, and busybody habits (5:13). Where does my idle time turn into other people's business?",
+  "Elders who rule well are worthy of double honor (5:17). When did I last thank or encourage someone who teaches me?",
+  "The laborer deserves his wages (5:18). Am I generous, prompt, and fair with the people who work for me or alongside me?",
+  "A charge against an elder requires two or three witnesses (5:19). Have I believed something bad about someone on a single unverified account?",
+  "Paul charges Timothy to act without prejudging and to do nothing from partiality (5:21). Whom do I judge harshly, and whom do I let off easy?",
+  "Do not be hasty in the laying on of hands (5:22). Where have I committed quickly and regretted it?",
+  "Keep yourself pure (5:22) closes a passage about handling other people's messes. How does serving others expose me to temptation?",
+  "Paul tells Timothy to take a little wine for his stomach (5:23). What does it say about God that this made it into Scripture? Am I caring for my body at all?",
+  "The sins of some are conspicuous, and the sins of others appear later (5:24). What in me would surface if my life were slowed down and examined?",
+  "Good works are conspicuous, and even those that are not cannot remain hidden (5:25). What good thing can I do this week that no one will see?",
+  "Persistent sin is to be rebuked in the presence of all (5:20). What do I make of a church that takes sin that seriously?",
+  "Verse 16 asks families to carry their own load so the church can help the truly needy. Am I a burden I need not be, or am I carrying my share?",
+  "This whole chapter is about honoring people. Name one person I have used more than honored, and do something about it today."
+ ],
+ [ // 1 Timothy 6
+  "Godliness with contentment is great gain (6:6). What one purchase or change am I convinced would finally make me content?",
+  "We brought nothing into the world, and we cannot take anything out (6:7). What am I holding as though I could keep it?",
+  "If we have food and clothing, with these we will be content (6:8). Is that literally true of me? Where is the honest gap?",
+  "The love of money is a root of all kinds of evils (6:10). Trace one anxiety from this week back to money. What is at the root?",
+  "Those who crave riches pierce themselves with many pangs (6:10). What wound in my life did I make myself?",
+  "Paul says flee these things, and pursue these others (6:11). Name what to flee and what to pursue this week — specifically.",
+  "The pursuit list is righteousness, godliness, faith, love, steadfastness, gentleness (6:11). Which one is least like me?",
+  "Fight the good fight of the faith (6:12). What is the actual fight in front of me right now?",
+  "Jesus made the good confession before Pontius Pilate (6:13). Where has confessing him cost me? Where have I dodged the cost?",
+  "False teachers have an unhealthy craving for controversy (6:4). Do I enjoy arguing about faith more than obeying in it?",
+  "Such quarrels produce envy, dissension, slander, and evil suspicions (6:4). Which of those four has been in my heart this week?",
+  "Some imagine that godliness is a means of gain (6:5). Have I ever expected God to pay me back for obedience?",
+  "Read 6:15–16 — King of kings, dwelling in unapproachable light. How does my praying change when God is that big?",
+  "The rich are told not to be haughty nor to set their hopes on the uncertainty of riches (6:17). By world standards I am rich. So what?",
+  "God richly provides us with everything to enjoy (6:17). Am I enjoying his gifts, or only anxiously managing them?",
+  "Be rich in good works, generous and ready to share (6:18). What is one specific thing I can give away this week?",
+  "Generosity stores up treasure as a good foundation for the future (6:19). What am I building that will outlast me?",
+  "Take hold of that which is truly life (6:19). What counterfeit version of life have I been holding onto?",
+  "Guard the deposit entrusted to you (6:20). What has God put in my care — a truth, a person, a responsibility — that I must not lose?",
+  "Paul ends by warning against what is falsely called knowledge (6:20). Where do I know a lot and obey a little?"
+ ]
+];
+
+function ecOffset(dateKey){
+  return Math.round((asDate(dateKey) - asDate(EC_START))/86400000);
+}
+function ecBank(ch){ return EC_QUESTIONS[ch-1] || []; }
+function ecFor(dateKey){
+  // what the extra credit is on a given calendar date, or null if outside the run
+  if(!dateKey || dateKey < EC_START || dateKey > EC_END) return null;
+  var n = ecOffset(dateKey);
+  if(n < 0) return null;
+  var ch = (n % EC_CYCLE) + 1;
+  var cycle = Math.floor(n / EC_CYCLE);
+  var bank = ecBank(ch);
+  if(!bank.length) return null;
+  var qi = cycle % bank.length;
+  return {n:n, ch:ch, cycle:cycle, qi:qi, q:bank[qi],
+          ref:"1 Timothy "+ch, week:Math.floor(n/7)+1, pass:cycle+1};
+}
+function ecStored(entry){
+  // an answer already written keeps its own chapter and question, whatever the date now says
+  if(!entry || !(entry.ec||"").trim() || !entry.ecCh) return null;
+  var ch = Number(entry.ecCh), qi = Number(entry.ecQ)||0, bank = ecBank(ch);
+  return {ch:ch, qi:qi, q:bank[qi] || "", ref:"1 Timothy "+ch, cycle:null, pass:null};
+}
+function ecDays(){
+  // calendar days in the run so far: EC_START through today (capped at Christmas Eve)
+  var today = keyOf(), last = today < EC_END ? today : EC_END;
+  if(last < EC_START) return 0;
+  return ecOffset(last) + 1;
+}
+function ecMap(){
+  var m = {};
+  Object.keys(state.entries).forEach(function(k){
+    var e = state.entries[k];
+    if(!e.date || !(e.ec||"").trim()) return;
+    var cur = m[e.date];
+    if(!cur || (e.savedAt||"") > (cur.savedAt||"")) m[e.date] = e;
+  });
+  return m;
+}
 
 /* ---------- dates ---------- */
 function pad(n){ return String(n).padStart(2,"0"); }
@@ -744,6 +943,10 @@ function toMarkdown(){
     QUESTIONS.forEach(function(q){
       if((e[q.id]||"").trim()) lines.push("**"+q.prompt+"**","",e[q.id].trim(),"");
     });
+    var xs = ecStored(e);
+    if(xs){
+      lines.push("**Extra credit — "+xs.ref+"**","",xs.q,"",e.ec.trim(),"");
+    }
   });
   return lines.join("\n");
 }
@@ -812,6 +1015,28 @@ function render(){
       html += '<div class="field"><label for="'+q.id+'">'+esc(q.prompt)+'</label>'+
               '<textarea id="'+q.id+'" data-q="'+q.id+'" placeholder="\u2014">'+esc(entry[q.id]||"")+'</textarea></div>';
     });
+
+    // Extra credit: optional, tied to the calendar day, offered on the current day and on
+    // past-dated days for backfill — never on days being read ahead. An answer already
+    // written always shows, so nothing gets hidden once it exists.
+    var ecAllowed = viewDay === currentDay() || (entry.date && entry.date < keyOf());
+    var ecDay = entry.date || (viewDay === currentDay() ? keyOf() : null);
+    var xc = ecStored(entry) || (ecAllowed ? ecFor(ecDay) : null);
+    if(xc){
+      var ecText = entry.ec || "";
+      html += '<div class="xc'+(ecText.trim() ? " done" : "")+'" id="xcBox">'+
+              '<div class="xchead"><span class="xctag">Extra credit</span>'+
+              '<span class="xcopt">Optional</span></div>'+
+              '<div class="xcref">'+esc(xc.ref)+'</div>'+
+              '<div class="xcmeta">Pastor’s challenge · one chapter a day through Christmas Eve'+
+              (xc.pass ? ' · pass '+xc.pass : '')+'</div>'+
+              '<div class="xcq">'+esc(xc.q)+'</div>'+
+              '<textarea id="ec" data-x="ec" data-ch="'+xc.ch+'" data-qi="'+xc.qi+
+              '" placeholder="—">'+esc(ecText)+'</textarea></div>';
+    } else if(viewDay > currentDay() && keyOf() <= EC_END){
+      html += '<div class="xclock">Extra credit is for the day you are on — '+
+              'do today’s 1 Timothy chapter before reading ahead.</div>';
+    }
 
     // P/M is asked once per calendar day (on the current day) and on past-dated
     // days for backfill — never on days being read ahead.
@@ -1028,6 +1253,41 @@ function render(){
         html += '</section>';
       }
     }
+
+    // Extra credit stands apart — it is optional and never touches a grade above.
+    var ecEl = ecDays();
+    if(ecEl > 0){
+      var em0 = ecMap();
+      var ecDone = Object.keys(em0).filter(function(k){ return k >= EC_START && k <= EC_END; }).length;
+      var ecPct = (ecDone/ecEl)*100;
+      var ecDots = '', ecN = 0;
+      var nowE = parseKey(keyOf());
+      for(var i7=6; i7>=0; i7--){
+        var de = new Date(nowE.y, nowE.m-1, nowE.d-i7), ke = keyOf(de);
+        if(ke < EC_START || ke > EC_END) continue;
+        var hit = !!em0[ke];
+        if(hit) ecN++;
+        ecDots += '<i class="'+(hit?"complete":"")+'" title="'+esc(shortDate(ke))+'"></i>';
+      }
+      var ecTotal = ecOffset(EC_END) + 1;
+      var ecLeft = ecTotal - ecEl;
+      html += '<section class="card" style="margin-top:20px">'+
+              '<div class="sechead"><span>Extra credit · 1 Timothy</span><span>'+
+              (ecLeft > 0 ? ecLeft+' day'+(ecLeft===1?'':'s')+' to Christmas Eve' : 'Run complete')+
+              '</span></div>'+
+              '<div class="weekrow"><span class="tlab">Last 7</span>'+
+              '<div class="dots">'+ecDots+'</div>'+
+              '<div class="wnum">'+ecN+'</div></div>'+
+              '<div class="ecsum"><span class="det">'+ecDone+' of '+ecEl+
+              ' days · since '+esc(shortDate(EC_START))+'</span>'+
+              '<span class="apct'+(ecPct>=MONTH_TARGET?" on":"")+'">'+ecPct.toFixed(0)+'%</span></div>'+
+              '<div class="bar" style="margin-top:14px">'+
+              '<i style="width:'+Math.min(100,(ecEl/ecTotal)*100)+'%"></i></div>'+
+              '<div class="sub">Day '+Math.min(ecEl,ecTotal)+' of '+ecTotal+' in the cycle</div>'+
+              '<div class="note">Optional, so it is not graded and does not count toward the '+
+              'percentages above. One chapter a day, 1 through 6 on repeat, with a new question '+
+              'each time a chapter comes back around.</div></section>';
+    }
   }
 
   app.innerHTML = html;
@@ -1057,7 +1317,7 @@ function wire(){
     b.onclick = function(){ flush(); viewDay = Number(b.dataset.goto); statusMsg=""; render(); };
   });
 
-  document.querySelectorAll("textarea[data-q]").forEach(function(t){
+  document.querySelectorAll("textarea[data-q],textarea[data-x]").forEach(function(t){
     t.oninput = function(){
       statusMsg = "Saving\u2026"; statusErr = false; paintStatus();
       if(saveTimer) clearTimeout(saveTimer);
@@ -1124,6 +1384,13 @@ function writeDraft(){
     if(sel){ e[t.id] = sel.dataset.v; any = true; }
     else delete e[t.id];
   });
+  // extra credit is optional: it keeps an entry alive but never counts toward the 3/3
+  var xn = document.querySelector('textarea[data-x="ec"]');
+  if(!xn){ if((e.ec||"").trim()) any = true; }       // not shown for this day — keep what is stored
+  else if(xn.value.trim()){
+    e.ec = xn.value; e.ecCh = Number(xn.dataset.ch); e.ecQ = Number(xn.dataset.qi);
+    any = true;
+  } else { delete e.ec; delete e.ecCh; delete e.ecQ; }
   if(any){
     if(!e.date) e.date = keyOf();
     e.savedAt = new Date().toISOString();
@@ -1138,11 +1405,13 @@ function writeDraft(){
     pill.textContent = n + "/3";
     pill.className = "pill" + (n===3 ? " on" : "");
   }
+  var xb = document.getElementById("xcBox");
+  if(xb && xn) xb.classList.toggle("done", !!xn.value.trim());
 }
 
 function flush(){
   if(saveTimer){ clearTimeout(saveTimer); saveTimer = null; }
-  if(document.querySelector("textarea[data-q]")) writeDraft();
+  if(document.querySelector("textarea[data-q],textarea[data-x]")) writeDraft();
 }
 
 document.getElementById("importer").onchange = function(ev){
