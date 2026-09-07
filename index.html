@@ -542,7 +542,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
-var APP_VER = "v19";
+var APP_VER = "v20";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -809,6 +809,12 @@ function answered(e){
   if(!e) return 0;
   return QUESTIONS.filter(function(q){ return (e[q.id]||"").trim().length>0; }).length;
 }
+function staleEntry(e){
+  // no reading written, but a stored date that is not today: a leftover (e.g. tracker marks
+  // touched on a read-ahead day before v16). Its date and marks are not trusted; writing the
+  // reading re-stamps the entry to the day it is actually written.
+  return !!(e && answered(e) === 0 && e.date && e.date !== keyOf());
+}
 function loggedDays(){
   return Object.keys(state.entries).map(Number).sort(function(a,b){return a-b;});
 }
@@ -846,7 +852,7 @@ function planDayMap(){
   var best = {}, out = {};
   Object.keys(state.entries).forEach(function(k){
     var e = state.entries[k];
-    if(!e.date) return;
+    if(!e.date || staleEntry(e)) return;
     var cur = best[e.date];
     if(!cur || answered(e) > answered(cur)){ best[e.date] = e; out[e.date] = Number(k); }
   });
@@ -1004,8 +1010,9 @@ function render(){
 
   if(page === "today"){
     var isNext = viewDay === nextUnloggedDay();
+    var stale = staleEntry(entry);
     html += '<section class="card"><div class="top"><div>'+
-            '<div class="date">'+(entry.date ? esc(prettyDate(entry.date)) : esc(prettyDate(keyOf())))+'</div>'+
+            '<div class="date">'+(entry.date && !stale ? esc(prettyDate(entry.date)) : esc(prettyDate(keyOf())))+'</div>'+
             (isNext ? '' : '<button class="link" id="jumpNext">Go to next unread</button>')+
             '</div><div class="stepper">'+
             '<button id="prev"'+(viewDay<=1?" disabled":"")+' aria-label="Previous day">\u2212</button>'+
@@ -1024,8 +1031,8 @@ function render(){
     // Extra credit: optional, tied to the calendar day, offered on the current day and on
     // past-dated days for backfill — never on days being read ahead. An answer already
     // written always shows, so nothing gets hidden once it exists.
-    var ecAllowed = viewDay === currentDay() || (entry.date && entry.date < keyOf());
-    var ecDay = entry.date || (viewDay === currentDay() ? keyOf() : null);
+    var ecAllowed = viewDay === currentDay() || (!stale && entry.date && entry.date < keyOf());
+    var ecDay = (stale ? null : entry.date) || (viewDay === currentDay() ? keyOf() : null);
     var xc = ecStored(entry) || (ecAllowed ? ecFor(ecDay) : null);
     if(xc){
       var ecText = entry.ec || "";
@@ -1045,10 +1052,10 @@ function render(){
 
     // P/M is asked once per calendar day (on the current day) and on past-dated
     // days for backfill — never on days being read ahead.
-    var pmAllowed = viewDay === currentDay() || (entry.date && entry.date < keyOf());
+    var pmAllowed = viewDay === currentDay() || (!stale && entry.date && entry.date < keyOf());
     if(pmAllowed){
       var segFor = function(t){
-        var v = entry[t.id];
+        var v = stale ? undefined : entry[t.id];
         var btn = function(val){
           return '<button data-v="'+val+'" data-g="'+(val===t.good?1:0)+'"'+(v===val?' class="sel"':'')+'>'+
                  (val==="no"?"No":"Yes")+'</button>';
@@ -1068,7 +1075,7 @@ function render(){
             esc(statusMsg || (n ? "Saved on this device" : "Nothing written yet"))+'</div>'+
             '<div class="pill'+(n===3?" on":"")+'">'+n+'/3</div></div></section>';
 
-    var ds = loggedDays().reverse().slice(0,14);
+    var ds = loggedDays().filter(function(d){ return !staleEntry(state.entries[d]); }).reverse().slice(0,14);
     if(ds.length){
       html += '<section style="margin-top:20px"><div class="sechead"><span>Recent</span></div>';
       ds.forEach(function(num){
@@ -1390,6 +1397,7 @@ function wire(){
 
 function writeDraft(){
   var e = state.entries[viewDay] || { day: viewDay, date: keyOf() };
+  if(staleEntry(e)){ TRACKERS.forEach(function(t){ delete e[t.id]; }); delete e.date; }
   var any = false;
   QUESTIONS.forEach(function(q){
     var node = document.querySelector('textarea[data-q="'+q.id+'"]');
