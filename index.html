@@ -207,7 +207,7 @@ textarea::placeholder{color:var(--ghost)}
 .arow .det{font-size:12px;color:var(--muted)}
 .apct{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:18px;color:var(--parchment)}
 .apct.on{color:var(--brass)}
-.mrow4{display:grid;grid-template-columns:1fr 64px 56px 56px 56px;gap:8px;align-items:baseline;
+.mrow4{display:grid;grid-template-columns:1fr 52px 46px 46px 46px 46px;gap:6px;align-items:baseline;
  border-bottom:1px solid var(--line);padding:11px 2px}
 .mrow4 .n{font-size:13px}
 .mrow4 .p{font-size:12px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
@@ -220,6 +220,28 @@ textarea::placeholder{color:var(--ghost)}
 .mrow4.hd span{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:right}
 .xc{margin:4px 0 16px;padding:13px 14px;border:1px dashed var(--brass);border-radius:10px}
 .xc.done{border-style:solid}
+.goal{margin:4px 0 16px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--track)}
+.goal.read{border-color:var(--brass)}
+.goaltag{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.goal.read .goaltag{color:var(--brass)}
+.goaltext{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:17px;line-height:1.4;margin:8px 0 10px;color:var(--parchment)}
+.goalbtn{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:14px;padding:5px 13px;font-size:12px;cursor:pointer;letter-spacing:.03em}
+.goal.read .goalbtn{background:var(--brass);border-color:var(--brass);color:var(--ink);font-weight:600}
+.goals{margin:6px 0 0;padding-left:26px}
+.goals li{padding:8px 0 8px 4px;border-bottom:1px solid var(--line);font-size:14px;line-height:1.45}
+.goals li::marker{color:var(--muted);font-variant-numeric:tabular-nums}
+.goals li.today{color:var(--brass)}
+.goals li small{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--brass);margin-left:6px}
+.gedit{min-height:340px;font-size:14px;line-height:1.5}
+.grow{display:flex;gap:14px;align-items:center;margin-top:12px}
+.gbtn{background:var(--brass);color:var(--ink);border:none;border-radius:16px;padding:7px 16px;font-size:13px;font-weight:600;cursor:pointer}
+.mgrid>span .gm{position:absolute;top:3px;left:4px;font-size:9px;line-height:1;font-weight:700;color:var(--ghost)}
+.mgrid>span .gm.ok{color:var(--brass)}
+.mgrid>span .gm.no{color:var(--rust)}
+.mgrid>span.complete .gm{color:var(--ink);opacity:.55}
+.mgrid>span.complete .gm.ok{opacity:1}
+.mgrid>span.complete .gm.no{color:var(--rustdeep);opacity:1}
+.legend .gmeg{font-size:9px;font-weight:700;color:var(--brass);margin-right:4px}
 .xchead{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .xctag{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--brass)}
 .xcopt{font-size:11px;color:var(--muted);flex-shrink:0}
@@ -490,6 +512,12 @@ function mergeRemote(remote){
       if(!mine || (theirs.savedAt||"") > (mine.savedAt||"")){ state.entries[k] = theirs; changed = true; }
     });
   }
+  if(remote && remote.goals && remote.goals.length &&
+     (!(state.goals||[]).length || (remote.goalsSavedAt||"") > (state.goalsSavedAt||""))){
+    if(JSON.stringify(remote.goals) !== JSON.stringify(state.goals||[])){
+      state.goals = remote.goals; state.goalsSavedAt = remote.goalsSavedAt; changed = true;
+    }
+  }
   return changed;
 }
 
@@ -542,7 +570,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
-var APP_VER = "v20";
+var APP_VER = "v21";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -560,7 +588,8 @@ function isUnlocked(){
 var TRACKERS = [
   {id:"p", label:"P", good:"no",  shift:-1},   // answer describes yesterday
   {id:"m", label:"M", good:"no",  shift:-1},
-  {id:"j", label:"J", good:"yes", shift:0}     // journalling: describes the day itself
+  {id:"j", label:"J", good:"yes", shift:0},    // journalling: describes the day itself
+  {id:"g", label:"G", good:"yes", shift:0, weekday:1, hint:"Rewrote my life goals in my journal"}  // Mondays only
 ];
 function trackerBy(id){ for(var i=0;i<TRACKERS.length;i++){ if(TRACKERS[i].id===id) return TRACKERS[i]; } return null; }
 
@@ -762,6 +791,17 @@ function parseKey(k){ var p=k.split("-").map(Number); return {y:p[0],m:p[1],d:p[
 function asDate(k){ var p=parseKey(k); return new Date(p.y,p.m-1,p.d); }
 function prettyDate(k){ return asDate(k).toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"}); }
 function shortDate(k){ return asDate(k).toLocaleDateString(undefined,{month:"short",day:"numeric"}); }
+function monthShort(y,m){ return new Date(y,m-1,1).toLocaleDateString(undefined,{month:"short",year:"numeric"}); }
+function goalIndex(k, n){
+  // one goal per calendar date, seeded from the date so both devices agree all day;
+  // never the same goal two days running
+  if(n <= 0) return -1;
+  var h = function(str){ var x = 5381; for(var i=0;i<str.length;i++){ x = ((x<<5)+x+str.charCodeAt(i))>>>0; } return x; };
+  var i = h(k) % n;
+  var d = asDate(k); d.setDate(d.getDate()-1);
+  if(n > 1 && i === h(keyOf(d)) % n) i = (i+1) % n;
+  return i;
+}
 function monthName(y,m){ return new Date(y,m-1,1).toLocaleDateString(undefined,{month:"long",year:"numeric"}); }
 function daysInMonth(y,m){ return new Date(y,m,0).getDate(); }
 
@@ -773,6 +813,7 @@ function gradeFor(p){ for(var i=0;i<GRADES.length;i++){ if(p>=GRADES[i][0]) retu
 var LS_KEY = "bibleLog.v1";
 var state = { version:1, entries:{} };   // entries keyed by PLAN DAY number
 var page = "today";
+var goalsEdit = false;
 var viewDay = 1;
 var _now0 = parseKey(keyOf());
 var viewY = _now0.y, viewM = _now0.m;
@@ -785,6 +826,7 @@ function load(){
     var raw = localStorage.getItem(LS_KEY);
     if(raw) state = JSON.parse(raw);
     if(!state.entries) state.entries = {};
+    if(!state.goals) state.goals = [];
   } catch(e){
     statusMsg = "Couldn't read saved data from this browser."; statusErr = true;
   }
@@ -919,25 +961,34 @@ function pmFirst(map){
   var ds = Object.keys(map).sort();
   return ds.length ? ds[0] : null;
 }
-function pmMonthStats(map, first, y, m, nowKey){
+function countDays(fromKey, toKey, wd){
+  // calendar days from..to inclusive, optionally only one weekday (0 = Sunday)
+  var a = asDate(fromKey), b = asDate(toKey), c = 0;
+  for(var d = new Date(a); d <= b; d.setDate(d.getDate()+1)){ if(wd == null || d.getDay() === wd) c++; }
+  return c;
+}
+function pmMonthStats(map, first, y, m, nowKey, wd){
   var s = parseKey(first), now = parseKey(nowKey || yKey());
   if(y>now.y || (y===now.y && m>now.m)) return null;
   if(y<s.y || (y===s.y && m<s.m)) return null;
   var a = (y===s.y && m===s.m) ? s.d : 1;
   var b = (y===now.y && m===now.m) ? now.d : daysInMonth(y,m);
   if(b < a) return null;
-  var clean = 0;
+  var clean = 0, el = 0;
   for(var d=a; d<=b; d++){
+    if(wd != null && new Date(y,m-1,d).getDay() !== wd) continue;
+    el++;
     if(map[y+"-"+pad(m)+"-"+pad(d)]===true) clean++;
   }
-  var el = b-a+1;
+  if(el === 0) return null;
   return {clean:clean, elapsed:el, pct: el>0 ? (clean/el)*100 : 0};
 }
-function tWeek(map, first, nowKey){
+function tWeek(map, first, nowKey, wd){
   var sd = asDate(first), now = parseKey(nowKey || yKey()), out=[], n=0;
   for(var i=6;i>=0;i--){
     var d = new Date(now.y, now.m-1, now.d-i);
     if(d < sd) continue;
+    if(wd != null && d.getDay() !== wd) continue;
     var k = keyOf(d), v = map[k];
     out.push({k:k, state: v===true ? "complete" : (v===false ? "fail" : "missed")});
     if(v===true) n++;
@@ -948,6 +999,11 @@ function tWeek(map, first, nowKey){
 /* ---------- export / import ---------- */
 function toMarkdown(){
   var lines = ["# Bible reading log",""];
+  if((state.goals||[]).length){
+    lines.push("## Life goals","");
+    state.goals.forEach(function(g,i){ lines.push((i+1)+". "+g); });
+    lines.push("");
+  }
   loggedDays().forEach(function(n){
     var e = state.entries[n], p = PLAN[n-1];
     lines.push("## Day "+n+" \u2014 "+p.read+(e.date ? " \u2014 "+prettyDate(e.date) : ""), "");
@@ -1006,11 +1062,15 @@ function render(){
           '<div class="count"><b>'+viewDay+'</b><span>of '+PLAN.length+'</span></div></div>';
 
   html += '<nav><button data-page="today" class="'+(page==="today"?"on":"")+'">Today</button>'+
-          '<button data-page="record" class="'+(page==="record"?"on":"")+'">Record</button></nav>';
+          '<button data-page="record" class="'+(page==="record"?"on":"")+'">Record</button>'+
+          '<button data-page="goals" class="'+(page==="goals"?"on":"")+'">Goals</button></nav>';
 
   if(page === "today"){
     var isNext = viewDay === nextUnloggedDay();
     var stale = staleEntry(entry);
+    // the calendar day this card speaks for: today on the current day, else the entry's own date
+    var effDate = viewDay === currentDay() ? keyOf() : (stale ? null : entry.date);
+    var dayOK = viewDay === currentDay() || (!stale && entry.date && entry.date < keyOf());
     html += '<section class="card"><div class="top"><div>'+
             '<div class="date">'+(entry.date && !stale ? esc(prettyDate(entry.date)) : esc(prettyDate(keyOf())))+'</div>'+
             (isNext ? '' : '<button class="link" id="jumpNext">Go to next unread</button>')+
@@ -1027,6 +1087,17 @@ function render(){
       html += '<div class="field"><label for="'+q.id+'">'+esc(q.prompt)+'</label>'+
               '<textarea id="'+q.id+'" data-q="'+q.id+'" placeholder="\u2014">'+esc(entry[q.id]||"")+'</textarea></div>';
     });
+
+    // Goal of the day: one life goal, picked per calendar date, under the three questions.
+    var goals = state.goals || [];
+    if(goals.length && dayOK && effDate){
+      var gi = goalIndex(effDate, goals.length), gRead = entry.gr === "yes";
+      html += '<div class="goal'+(gRead?" read":"")+'" id="goalBox">'+
+              '<div class="xchead"><span class="goaltag">Life goal</span><span class="xcopt">'+(gi+1)+' of '+goals.length+'</span></div>'+
+              '<div class="goaltext">'+esc(goals[gi])+'</div>'+
+              '<button type="button" class="goalbtn" id="goalRead" data-v="'+(gRead?"yes":"")+'">'+
+              (gRead ? "Read \u2713" : "Mark as read")+'</button></div>';
+    }
 
     // Extra credit: optional, tied to the calendar day, offered on the current day and on
     // past-dated days for backfill — never on days being read ahead. An answer already
@@ -1060,12 +1131,16 @@ function render(){
           return '<button data-v="'+val+'" data-g="'+(val===t.good?1:0)+'"'+(v===val?' class="sel"':'')+'>'+
                  (val==="no"?"No":"Yes")+'</button>';
         };
-        return '<div class="pmitem"><span class="pmlab">'+t.label+'</span>'+
+        return '<div class="pmitem"'+(t.hint?' title="'+esc(t.hint)+'"':'')+'><span class="pmlab">'+t.label+'</span>'+
                '<div class="seg" data-t="'+t.id+'">'+btn("no")+btn("yes")+'</div></div>';
       };
       [{head:"Yesterday", shift:-1},{head:"Today", shift:0}].forEach(function(g){
         html += '<div class="pmwrap"><span class="pmhead">'+g.head+'</span><div class="pmset">';
-        TRACKERS.forEach(function(t){ if(t.shift===g.shift) html += segFor(t); });
+        TRACKERS.forEach(function(t){
+          if(t.shift!==g.shift) return;
+          if(t.weekday != null && (!effDate || asDate(effDate).getDay() !== t.weekday)) return;  // weekly: its day only
+          html += segFor(t);
+        });
         html += '</div></div>';
       });
     }
@@ -1149,11 +1224,11 @@ function render(){
       var start = firstDate();
       var totalElapsed = Math.round((asDate(keyOf()) - asDate(start))/86400000) + 1;
 
-      var pMapv = pmMap("p"), mMapv = pmMap("m"), jMapv = pmMap("j");
-      var pF = pmFirst(pMapv), mF = pmFirst(mMapv), jF = pmFirst(jMapv);
+      var pMapv = pmMap("p"), mMapv = pmMap("m"), jMapv = pmMap("j"), gMapv = pmMap("g");
+      var pF = pmFirst(pMapv), mF = pmFirst(mMapv), jF = pmFirst(jMapv), gF = pmFirst(gMapv);
 
       var nowP = parseKey(keyOf());
-      var minKey = [start, pF, mF, jF].filter(Boolean).sort()[0];
+      var minKey = [start, pF, mF, jF, gF].filter(Boolean).sort()[0];
       var minP = parseKey(minKey);
       if(viewY < minP.y || (viewY === minP.y && viewM < minP.m)){ viewY = minP.y; viewM = minP.m; }
       if(viewY > nowP.y || (viewY === nowP.y && viewM > nowP.m)){ viewY = nowP.y; viewM = nowP.m; }
@@ -1164,6 +1239,7 @@ function render(){
       var pMS = pF ? pmMonthStats(pMapv, pF, viewY, viewM) : null;
       var mMS = mF ? pmMonthStats(mMapv, mF, viewY, viewM) : null;
       var jMS = jF ? pmMonthStats(jMapv, jF, viewY, viewM, keyOf()) : null;
+      var gMS = gF ? pmMonthStats(gMapv, gF, viewY, viewM, keyOf(), 1) : null;
 
       var barRow = function(lab, ms, alt){
         if(!ms) return '<div class="trow"><span class="tlab">'+lab+'</span>'+
@@ -1191,6 +1267,7 @@ function render(){
               barRow("P", pMS, true)+
               barRow("M", mMS, true)+
               barRow("J", jMS, true)+
+              barRow("G", gMS, true)+
               '</div>';
 
       html += '<div class="mgrid dowrow">';
@@ -1208,7 +1285,10 @@ function render(){
         var pips = cls!=="out" ? '<span class="pips">'+pip(pv,"P")+pip(mv,"M")+pip(jv,"J")+'</span>' : '';
         var pdn = pdm[dk] || (dk===todayKey && cls!=="out" ? curD : 0);
         var pdTag = pdn ? '<span class="pd" title="Reading day '+pdn+'">'+pdn+'</span>' : '';
-        html += '<span class="'+cls+'">'+d+pdTag+pips+'</span>';
+        var gv = gMapv[dk], isMon = new Date(viewY, viewM-1, d).getDay() === 1;
+        var gTag = (isMon && cls!=="out" && gF && dk >= gF) ?
+          '<span class="gm'+(gv===true?" ok":(gv===false?" no":""))+'" title="Goals rewritten">G</span>' : '';
+        html += '<span class="'+cls+'">'+d+gTag+pdTag+pips+'</span>';
       }
       html += '</div><div class="legend">'+
               '<span><i class="sw c"></i>All three</span>'+
@@ -1217,6 +1297,7 @@ function render(){
               '<span><b class="pip ok">P</b>No</span>'+
               '<span><b class="pip no">M</b>Yes</span>'+
               '<span><b class="pip ok">J</b>Yes</span>'+
+              '<span><b class="gmeg">G</b>Mondays</span>'+
               '<span><b class="pdeg">8</b>Reading day</span></div></section>';
 
       var weekRow = function(lab, days, n, elapsed, pct){
@@ -1231,16 +1312,18 @@ function render(){
       var pWk = pF ? tWeek(pMapv, pF) : null;
       var mWk = mF ? tWeek(mMapv, mF) : null;
       var jWk = jF ? tWeek(jMapv, jF, keyOf()) : null;
+      var gWk = gF ? tWeek(gMapv, gF, keyOf(), 1) : null;
       if(pWk) html += weekRow("P", pWk.days, pWk.n, pWk.elapsed, pWk.pct);
       if(mWk) html += weekRow("M", mWk.days, mWk.n, mWk.elapsed, mWk.pct);
       if(jWk) html += weekRow("J", jWk.days, jWk.n, jWk.elapsed, jWk.pct);
+      if(gWk && gWk.elapsed) html += weekRow("G", gWk.days, gWk.n, gWk.elapsed, gWk.pct);
       html += '<div class="note">Rolling seven days, not Sunday-to-Saturday. '+
-              'P and M run a day behind \u2014 each answer lands on the day it describes. J is for the day itself.</div></section>';
+              'P and M run a day behind \u2014 each answer lands on the day it describes. J is for the day itself. G is Mondays only.</div></section>';
 
-      var aRow = function(lab, n, el, sinceKey){
+      var aRow = function(lab, n, el, sinceKey, unit){
         var pct = el>0 ? (n/el)*100 : 0;
         return '<div class="arow"><span class="tlab">'+lab+'</span>'+
-               '<span class="det">'+n+' of '+el+' days \u00b7 since '+esc(shortDate(sinceKey))+'</span>'+
+               '<span class="det">'+n+' of '+el+' '+(unit||"days")+' \u00b7 since '+esc(shortDate(sinceKey))+'</span>'+
                '<span class="apct'+(pct>=MONTH_TARGET?" on":"")+'">'+pct.toFixed(1)+'%'+
                '<b>'+(el<GRADE_FLOOR?"\u2014":gradeFor(pct))+'</b></span></div>';
       };
@@ -1258,24 +1341,29 @@ function render(){
         var jClean = Object.keys(jMapv).filter(function(k){ return jMapv[k]===true; }).length;
         html += aRow("J", jClean, Math.round((asDate(keyOf()) - asDate(jF))/86400000) + 1, jF);
       }
+      if(gF){
+        var gClean = Object.keys(gMapv).filter(function(k){ return gMapv[k]===true; }).length;
+        html += aRow("G", gClean, countDays(gF, keyOf(), 1), gF, "Mondays");
+      }
       html += '<div class="bar" style="margin-top:16px">'+
               '<i style="width:'+Math.min(100,(totalComplete/YEAR_GOAL)*100)+'%"></i></div>'+
               '<div class="sub">'+totalComplete+' of '+YEAR_GOAL+' reading days toward the year</div></section>';
 
       if(months.length){
         html += '<section style="margin-top:20px"><div class="sechead"><span>By month</span></div>'+
-                '<div class="mrow4 hd"><span></span><span>Read</span><span>P</span><span>M</span><span>J</span></div>';
+                '<div class="mrow4 hd"><span></span><span>Read</span><span>P</span><span>M</span><span>J</span><span>G</span></div>';
         months.forEach(function(ms){
           var pp = pF ? pmMonthStats(pMapv, pF, ms.y, ms.m) : null;
           var mm = mF ? pmMonthStats(mMapv, mF, ms.y, ms.m) : null;
           var jj = jF ? pmMonthStats(jMapv, jF, ms.y, ms.m, keyOf()) : null;
+          var gg = gF ? pmMonthStats(gMapv, gF, ms.y, ms.m, keyOf(), 1) : null;
           var cell = function(x){
             if(!x) return '<span class="p">\u2014</span>';
             return '<span class="p'+(x.pct>=MONTH_TARGET?" on":"")+'">'+x.pct.toFixed(0)+'%'+
                    '<b>'+(x.elapsed<GRADE_FLOOR?"\u2014":gradeFor(x.pct))+'</b></span>';
           };
-          html += '<div class="mrow4"><span class="n">'+esc(monthName(ms.y,ms.m))+'</span>'+
-                  cell(ms)+cell(pp)+cell(mm)+cell(jj)+'</div>';
+          html += '<div class="mrow4"><span class="n">'+esc(monthShort(ms.y,ms.m))+'</span>'+
+                  cell(ms)+cell(pp)+cell(mm)+cell(jj)+cell(gg)+'</div>';
         });
         html += '</section>';
       }
@@ -1317,6 +1405,46 @@ function render(){
     }
   }
 
+  if(page === "goals"){
+    var gl = state.goals || [], todayGi = gl.length ? goalIndex(keyOf(), gl.length) : -1;
+    html += '<section class="card"><div class="sechead"><span>Life goals</span><span>'+(gl.length ? gl.length+' goals' : '')+'</span></div>';
+    if(goalsEdit){
+      html += '<div class="note" style="margin-bottom:8px">One goal per line. Numbers are added for you.</div>'+
+              '<textarea id="goalsText" class="gedit">'+esc(gl.join("\n"))+'</textarea>'+
+              '<div class="grow"><button type="button" class="gbtn" id="goalsSave">Save</button>'+
+              '<button type="button" class="link" id="goalsCancel">Cancel</button></div>';
+    } else {
+      if(gl.length){
+        html += '<ol class="goals">';
+        gl.forEach(function(g,i){ html += '<li'+(i===todayGi?' class="today"':'')+'>'+esc(g)+(i===todayGi?' <small>today</small>':'')+'</li>'; });
+        html += '</ol>';
+      } else {
+        html += '<div class="note">No goals yet. They live in your data, not in the page, so add them here once and they sync to your other device.</div>';
+      }
+      html += '<div class="grow"><button type="button" class="link" id="goalsEdit">'+(gl.length?'Edit goals':'Add goals')+'</button></div>';
+    }
+    html += '</section>';
+
+    var gMapG = pmMap("g"), gFirst = pmFirst(gMapG);
+    var grDates = {};
+    Object.keys(state.entries).forEach(function(k){ var e = state.entries[k]; if(e.date && e.gr==="yes" && !staleEntry(e)) grDates[e.date] = true; });
+    var grKeys = Object.keys(grDates).sort();
+    var rhythm = function(lab, n, el, unit, sinceKey){
+      var pct = el>0 ? (n/el)*100 : 0;
+      return '<div class="arow"><span class="tlab">'+lab+'</span>'+
+             '<span class="det">'+n+' of '+el+' '+unit+' \u00b7 since '+esc(shortDate(sinceKey))+'</span>'+
+             '<span class="apct'+(pct>=MONTH_TARGET?" on":"")+'">'+pct.toFixed(0)+'%</span></div>';
+    };
+    html += '<section class="card" style="margin-top:20px"><div class="sechead"><span>Rhythm</span></div>';
+    if(gFirst){
+      var gDoneT = Object.keys(gMapG).filter(function(k){ return gMapG[k]===true; }).length;
+      html += rhythm("G", gDoneT, countDays(gFirst, keyOf(), 1), "Mondays", gFirst);
+    }
+    if(grKeys.length) html += rhythm("Read", grKeys.length, countDays(grKeys[0], keyOf(), null), "days", grKeys[0]);
+    html += '<div class="note">G: every Monday, rewrite the goals in my journal and note any achieved \u2014 the G toggle appears on Mondays. '+
+            'Read: one goal is picked for each day and shown under the reading questions; tap Mark as read.</div></section>';
+  }
+
   app.innerHTML = html;
   wire();
 }
@@ -1329,6 +1457,22 @@ function wire(){
       render();
     };
   });
+  var gr = document.getElementById("goalRead");
+  if(gr) gr.onclick = function(){
+    var on = gr.dataset.v !== "yes";
+    gr.dataset.v = on ? "yes" : ""; gr.textContent = on ? "Read \u2713" : "Mark as read";
+    document.getElementById("goalBox").classList.toggle("read", on);
+    writeDraft();
+  };
+  var ge = document.getElementById("goalsEdit"); if(ge) ge.onclick = function(){ goalsEdit = true; render(); };
+  var gc = document.getElementById("goalsCancel"); if(gc) gc.onclick = function(){ goalsEdit = false; render(); };
+  var gs = document.getElementById("goalsSave");
+  if(gs) gs.onclick = function(){
+    var lines = document.getElementById("goalsText").value.split("\n")
+      .map(function(x){ return x.replace(/^\s*\d+[.)]\s*/, "").trim(); }).filter(Boolean);
+    state.goals = lines; state.goalsSavedAt = new Date().toISOString(); goalsEdit = false;
+    save(); render();
+  };
   ["mPrev","mNext"].forEach(function(id){
     var b = document.getElementById(id);
     if(b) b.onclick = function(){ viewY = Number(b.dataset.y); viewM = Number(b.dataset.m); render(); };
@@ -1397,7 +1541,7 @@ function wire(){
 
 function writeDraft(){
   var e = state.entries[viewDay] || { day: viewDay, date: keyOf() };
-  if(staleEntry(e)){ TRACKERS.forEach(function(t){ delete e[t.id]; }); delete e.date; }
+  if(staleEntry(e)){ TRACKERS.forEach(function(t){ delete e[t.id]; }); delete e.gr; delete e.date; }
   var any = false;
   QUESTIONS.forEach(function(q){
     var node = document.querySelector('textarea[data-q="'+q.id+'"]');
@@ -1412,6 +1556,11 @@ function writeDraft(){
     if(sel){ e[t.id] = sel.dataset.v; any = true; }
     else delete e[t.id];
   });
+  // goal of the day: read acknowledgement rides on the entry
+  var gb = document.getElementById("goalRead");
+  if(!gb){ if(e.gr) any = true; }
+  else if(gb.dataset.v === "yes"){ e.gr = "yes"; any = true; }
+  else delete e.gr;
   // extra credit is optional: it keeps an entry alive but never counts toward the 3/3
   var xn = document.querySelector('textarea[data-x="ec"]');
   if(!xn){ if((e.ec||"").trim()) any = true; }       // not shown for this day — keep what is stored
