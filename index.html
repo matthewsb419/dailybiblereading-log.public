@@ -242,6 +242,10 @@ textarea::placeholder{color:var(--ghost)}
 .mgrid>span.complete .gm.ok{opacity:1}
 .mgrid>span.complete .gm.no{color:var(--rustdeep);opacity:1}
 .legend .gmeg{font-size:9px;font-weight:700;color:var(--brass);margin-right:4px}
+.mgrid>span.ed{cursor:pointer}
+.mgrid>span.ed:hover,.mgrid>span.ed:focus-visible,.mgrid>span.pick{outline:2px solid var(--parchment);outline-offset:1px}
+.calsheet{margin:0 0 14px;padding:12px 14px;border:1px solid var(--brass);border-radius:10px;background:var(--track)}
+.calsheet .calset{flex-wrap:wrap;gap:12px 18px;margin-top:10px}
 .xchead{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .xctag{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--brass)}
 .xcopt{font-size:11px;color:var(--muted);flex-shrink:0}
@@ -518,6 +522,7 @@ function mergeRemote(remote){
       state.goals = remote.goals; state.goalsSavedAt = remote.goalsSavedAt; changed = true;
     }
   }
+  if(remote && remote.marks && mergeMarks(remote.marks)) changed = true;
   return changed;
 }
 
@@ -570,7 +575,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
-var APP_VER = "v21";
+var APP_VER = "v22";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -814,6 +819,7 @@ var LS_KEY = "bibleLog.v1";
 var state = { version:1, entries:{} };   // entries keyed by PLAN DAY number
 var page = "today";
 var goalsEdit = false;
+var calPick = null;   // calendar day open for backfilling tracker marks (Record page)
 var viewDay = 1;
 var _now0 = parseKey(keyOf());
 var viewY = _now0.y, viewM = _now0.m;
@@ -827,6 +833,7 @@ function load(){
     if(raw) state = JSON.parse(raw);
     if(!state.entries) state.entries = {};
     if(!state.goals) state.goals = [];
+    if(!state.marks) state.marks = {};
   } catch(e){
     statusMsg = "Couldn't read saved data from this browser."; statusErr = true;
   }
@@ -952,11 +959,67 @@ function pmMap(f){
     var key = keyOf(d), cur = m[key];
     if(!cur || (e.savedAt||"") > (cur.savedAt||"")) m[key] = {v:e[f]===t.good, savedAt:e.savedAt};
   });
+  // marks filled in from the calendar are already keyed to the day they describe
+  Object.keys(state.marks||{}).forEach(function(dk){
+    var r = state.marks[dk], at = r[f+"At"]||"", cur = m[dk];
+    if(r[f]!=="yes" && r[f]!=="no") return;
+    if(!cur || at > (cur.savedAt||"")) m[dk] = {v:r[f]===t.good, savedAt:at};
+  });
   var out = {};
   Object.keys(m).forEach(function(k){ out[k] = m[k].v; });
   return out;
 }
 function tNow(f){ return trackerBy(f).shift < 0 ? yKey() : keyOf(); }
+
+/* ---------- calendar backfill: tracker marks for days with no entry ---------- */
+// state.marks[day] = {p:"yes"|"no"|"", pAt:iso, ...}, keyed to the day the answer DESCRIBES.
+// A cleared mark keeps its time so the clear syncs too.
+function shiftKey(k, n){ var d = asDate(k); d.setDate(d.getDate()+n); return keyOf(d); }
+function markVal(f, dk){
+  var r = (state.marks||{})[dk], v = r && r[f];
+  return (v==="yes" || v==="no") ? v : undefined;
+}
+function putMark(f, dk, v){
+  if(!state.marks) state.marks = {};
+  var r = state.marks[dk] || (state.marks[dk] = {});
+  r[f] = v || ""; r[f+"At"] = new Date().toISOString();
+}
+function mergeMarks(src){
+  // per day and tracker, the most recent edit wins
+  var changed = false;
+  if(!state.marks) state.marks = {};
+  Object.keys(src||{}).forEach(function(dk){
+    var theirs = src[dk] || {}, mine = state.marks[dk] || {};
+    TRACKERS.forEach(function(t){
+      var at = t.id+"At";
+      if(theirs[at] && theirs[at] > (mine[at]||"")){ mine[t.id] = theirs[t.id]||""; mine[at] = theirs[at]; changed = true; }
+    });
+    if(Object.keys(mine).length) state.marks[dk] = mine;
+  });
+  return changed;
+}
+function setMark(f, dk, v){
+  // Set (v = "yes"/"no") or clear (v = "") tracker f for day dk from the calendar.
+  // If a written entry already holds this answer, or is the entry whose Today card asks it,
+  // edit that entry so the Today card and the calendar never disagree; otherwise store a mark.
+  var t = trackerBy(f), sd = shiftKey(dk, -t.shift), today = keyOf(), cur = currentDay();
+  var holder = null, host = null;
+  loggedDays().forEach(function(n){
+    var e = state.entries[n];
+    if(e.date !== sd || staleEntry(e)) return;
+    if((e[f]==="yes" || e[f]==="no") && (!holder || (e.savedAt||"") > (holder.savedAt||""))) holder = e;
+    if(!host && (sd < today || n === cur)) host = e;
+  });
+  var e = holder || host;
+  if(e){
+    if(v) e[f] = v; else delete e[f];
+    e.savedAt = new Date().toISOString();
+    if(markVal(f, dk)) putMark(f, dk, "");
+  } else {
+    putMark(f, dk, v);
+  }
+  save();
+}
 function pmFirst(map){
   var ds = Object.keys(map).sort();
   return ds.length ? ds[0] : null;
@@ -1033,6 +1096,7 @@ function importFile(file){
         var mine = state.entries[k], theirs = incoming.entries[k];
         if(!mine || answered(theirs) > answered(mine)) state.entries[k] = theirs;
       });
+      if(incoming.marks) mergeMarks(incoming.marks);
       save(); render();
     } catch(e){
       statusMsg = "That file didn't look like a backup from this app."; statusErr = true; paintStatus();
@@ -1127,6 +1191,7 @@ function render(){
     if(pmAllowed){
       var segFor = function(t){
         var v = stale ? undefined : entry[t.id];
+        if(v!=="yes" && v!=="no" && effDate) v = markVal(t.id, shiftKey(effDate, t.shift));  // filled in from the calendar
         var btn = function(val){
           return '<button data-v="'+val+'" data-g="'+(val===t.good?1:0)+'"'+(v===val?' class="sel"':'')+'>'+
                  (val==="no"?"No":"Yes")+'</button>';
@@ -1288,9 +1353,34 @@ function render(){
         var gv = gMapv[dk], isMon = new Date(viewY, viewM-1, d).getDay() === 1;
         var gTag = (isMon && cls!=="out" && gF && dk >= gF) ?
           '<span class="gm'+(gv===true?" ok":(gv===false?" no":""))+'" title="Goals rewritten">G</span>' : '';
-        html += '<span class="'+cls+'">'+d+gTag+pdTag+pips+'</span>';
+        var canEd = dk <= todayKey && dk >= minKey;
+        html += '<span class="'+cls+(canEd?' ed':'')+(dk===calPick?' pick':'')+'"'+
+                (canEd?' data-dk="'+dk+'" role="button" tabindex="0" aria-label="Fill in '+esc(prettyDate(dk))+'"':'')+'>'+
+                d+gTag+pdTag+pips+'</span>';
       }
-      html += '</div><div class="legend">'+
+      html += '</div>';
+
+      // backfill sheet for the tapped day: answers are for that day itself
+      if(calPick && calPick.slice(0,7) === viewY+"-"+pad(viewM)){
+        var cMaps = {p:pMapv, m:mMapv, j:jMapv, g:gMapv}, cwd = asDate(calPick).getDay(), yk = yKey();
+        html += '<div class="calsheet"><div class="xchead"><span class="goaltag">'+esc(prettyDate(calPick))+'</span>'+
+                '<button type="button" class="link" id="calClose">Done</button></div><div class="pmset calset">';
+        TRACKERS.forEach(function(t){
+          if(calPick > (t.shift < 0 ? yk : todayKey)) return;         // P/M for today are answered tomorrow
+          if(t.weekday != null && cwd !== t.weekday) return;
+          var b = cMaps[t.id][calPick], bad = t.good === "yes" ? "no" : "yes";
+          var v = b === true ? t.good : (b === false ? bad : "");
+          var btn = function(val){
+            return '<button data-v="'+val+'" data-g="'+(val===t.good?1:0)+'"'+(v===val?' class="sel"':'')+'>'+
+                   (val==="no"?"No":"Yes")+'</button>';
+          };
+          html += '<div class="pmitem"'+(t.hint?' title="'+esc(t.hint)+'"':'')+'><span class="pmlab">'+t.label+'</span>'+
+                  '<div class="seg" data-ct="'+t.id+'">'+btn("no")+btn("yes")+'</div></div>';
+        });
+        html += '</div>'+(calPick === todayKey ? '<div class="note">P and M for today get answered tomorrow.</div>' : '')+'</div>';
+      }
+
+      html += '<div class="legend">'+
               '<span><i class="sw c"></i>All three</span>'+
               '<span><i class="sw p"></i>Partial</span>'+
               '<span><i class="sw"></i>Missed</span>'+
@@ -1298,7 +1388,8 @@ function render(){
               '<span><b class="pip no">M</b>Yes</span>'+
               '<span><b class="pip ok">J</b>Yes</span>'+
               '<span><b class="gmeg">G</b>Mondays</span>'+
-              '<span><b class="pdeg">8</b>Reading day</span></div></section>';
+              '<span><b class="pdeg">8</b>Reading day</span></div>'+
+              '<div class="note">Tap a day to fill in or fix its P, M and J (G on Mondays).</div></section>';
 
       var weekRow = function(lab, days, n, elapsed, pct){
         var dots = '';
@@ -1452,7 +1543,7 @@ function render(){
 function wire(){
   document.querySelectorAll("nav button").forEach(function(b){
     b.onclick = function(){
-      page = b.dataset.page; statusMsg="";
+      page = b.dataset.page; statusMsg=""; calPick = null;
       var n0 = parseKey(keyOf()); viewY = n0.y; viewM = n0.m;
       render();
     };
@@ -1475,8 +1566,20 @@ function wire(){
   };
   ["mPrev","mNext"].forEach(function(id){
     var b = document.getElementById(id);
-    if(b) b.onclick = function(){ viewY = Number(b.dataset.y); viewM = Number(b.dataset.m); render(); };
+    if(b) b.onclick = function(){ viewY = Number(b.dataset.y); viewM = Number(b.dataset.m); calPick = null; render(); };
   });
+  document.querySelectorAll("[data-dk]").forEach(function(s){
+    var pick = function(){ calPick = calPick === s.dataset.dk ? null : s.dataset.dk; render(); };
+    s.onclick = pick;
+    s.onkeydown = function(ev){ if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); pick(); } };
+  });
+  document.querySelectorAll(".seg[data-ct] button").forEach(function(b){
+    b.onclick = function(){
+      setMark(b.parentNode.dataset.ct, calPick, b.classList.contains("sel") ? "" : b.dataset.v);
+      render();
+    };
+  });
+  var cc = document.getElementById("calClose"); if(cc) cc.onclick = function(){ calPick = null; render(); };
   var prev = document.getElementById("prev");
   var next = document.getElementById("next");
   if(prev) prev.onclick = function(){ flush(); viewDay = Math.max(1, viewDay-1); statusMsg=""; render(); };
@@ -1497,7 +1600,7 @@ function wire(){
     t.onblur = function(){ if(saveTimer){ clearTimeout(saveTimer); saveTimer=null; } writeDraft(); };
   });
 
-  document.querySelectorAll(".seg button").forEach(function(b){
+  document.querySelectorAll(".seg[data-t] button").forEach(function(b){
     b.onclick = function(){
       var seg = b.parentNode, was = b.classList.contains("sel");
       seg.querySelectorAll("button").forEach(function(x){ x.classList.remove("sel"); });
@@ -1555,6 +1658,8 @@ function writeDraft(){
     var sel = seg.querySelector("button.sel");
     if(sel){ e[t.id] = sel.dataset.v; any = true; }
     else delete e[t.id];
+    var mk = shiftKey(e.date || keyOf(), t.shift);
+    if(markVal(t.id, mk)) putMark(t.id, mk, "");   // the toggle showed the calendar mark; the entry now holds it
   });
   // goal of the day: read acknowledgement rides on the entry
   var gb = document.getElementById("goalRead");
