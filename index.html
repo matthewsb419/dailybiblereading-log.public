@@ -232,6 +232,14 @@ textarea::placeholder{color:var(--ghost)}
 .goals li::marker{color:var(--muted);font-variant-numeric:tabular-nums}
 .goals li.today{color:var(--brass)}
 .goals li small{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--brass);margin-left:6px}
+.enc{margin:4px 0 16px;padding:12px 14px;border:1px solid var(--line);border-left:3px solid var(--brass);border-radius:10px;background:var(--track)}
+.enctext{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:16px;line-height:1.5;margin:8px 0 6px;color:var(--parchment);white-space:pre-line}
+.encby{font-size:12px;color:var(--muted);text-align:right}
+.qcat{margin:18px 0 0}
+.qcat:first-of-type{margin-top:6px}
+.quotes li .qt{display:block;white-space:pre-line;font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:15px;line-height:1.5}
+.quotes li .qa{display:block;font-size:12px;color:var(--muted);margin-top:3px}
+.quotes li.today .qt{color:var(--brass)}
 .gedit{min-height:340px;font-size:14px;line-height:1.5}
 .grow{display:flex;gap:14px;align-items:center;margin-top:12px}
 .gbtn{background:var(--brass);color:var(--ink);border:none;border-radius:16px;padding:7px 16px;font-size:13px;font-weight:600;cursor:pointer}
@@ -629,7 +637,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
-var APP_VER = "v23";
+var APP_VER = "v24";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -861,6 +869,136 @@ function goalIndex(k, n){
   if(n > 1 && i === h(keyOf(d)) % n) i = (i+1) % n;
   return i;
 }
+
+/* ---------- encouragement: one quote or verse a day, nothing to track ---------- */
+var QUOTE_CATS = [["do","Do hard things"],["hope","Hard now, good later"],["god","God is in control"]];
+var QUOTES = [
+  // do hard things
+  {c:"do", a:"Theodore Roosevelt, “The Man in the Arena,” 1910",
+   t:"It is not the critic who counts; not the man who points out how the strong man stumbles, or where the doer of deeds could have done them better. The credit belongs to the man who is actually in the arena, whose face is marred by dust and sweat and blood; who strives valiantly; who errs, who comes short again and again, because there is no effort without error and shortcoming; but who does actually strive to do the deeds; who knows great enthusiasms, the great devotions; who spends himself in a worthy cause; who at the best knows in the end the triumph of high achievement, and who at the worst, if he fails, at least fails while daring greatly, so that his place shall never be with those cold and timid souls who neither know victory nor defeat."},
+  {c:"do", a:"Elizabeth Appell, “Risk”", t:"And then the day came,\nwhen the risk\nto remain tight\nin a bud\nwas more painful\nthan the risk\nit took\nto blossom."},
+  {c:"do", a:"Joshua 1:9", t:"Have I not commanded you? Be strong and courageous. Do not be frightened, and do not be dismayed, for the LORD your God is with you wherever you go."},
+  {c:"do", a:"Philippians 4:13", t:"I can do all things through him who strengthens me."},
+  {c:"do", a:"Colossians 3:23", t:"Whatever you do, work heartily, as for the Lord and not for men."},
+  {c:"do", a:"1 Corinthians 16:13", t:"Be watchful, stand firm in the faith, act like men, be strong."},
+  {c:"do", a:"2 Timothy 1:7", t:"For God gave us a spirit not of fear but of power and love and self-control."},
+  {c:"do", a:"Hebrews 12:1–2", t:"Let us also lay aside every weight, and sin which clings so closely, and let us run with endurance the race that is set before us, looking to Jesus, the founder and perfecter of our faith."},
+  {c:"do", a:"1 Corinthians 9:24", t:"Do you not know that in a race all the runners run, but only one receives the prize? So run that you may obtain it."},
+  {c:"do", a:"1 Timothy 4:7–8", t:"Train yourself for godliness; for while bodily training is of some value, godliness is of value in every way, as it holds promise for the present life and also for the life to come."},
+  {c:"do", a:"Philippians 3:13–14", t:"But one thing I do: forgetting what lies behind and straining forward to what lies ahead, I press on toward the goal for the prize of the upward call of God in Christ Jesus."},
+  {c:"do", a:"1 Chronicles 28:20", t:"Be strong and courageous and do it. Do not be afraid and do not be dismayed, for the LORD God, even my God, is with you. He will not leave you or forsake you, until all the work for the service of the house of the LORD is finished."},
+  {c:"do", a:"Deuteronomy 31:6", t:"Be strong and courageous. Do not fear or be in dread of them, for it is the LORD your God who goes with you. He will not leave you or forsake you."},
+  {c:"do", a:"Isaiah 6:8", t:"And I heard the voice of the Lord saying, “Whom shall I send, and who will go for us?” Then I said, “Here I am! Send me.”"},
+  {c:"do", a:"Esther 4:14", t:"And who knows whether you have not come to the kingdom for such a time as this?"},
+  {c:"do", a:"Nehemiah 6:3", t:"I am doing a great work and I cannot come down. Why should the work stop while I leave it and come down to you?"},
+  {c:"do", a:"Daniel 3:17–18", t:"Our God whom we serve is able to deliver us from the burning fiery furnace, and he will deliver us out of your hand, O king. But if not, be it known to you, O king, that we will not serve your gods or worship the golden image that you have set up."},
+  {c:"do", a:"James 1:22", t:"But be doers of the word, and not hearers only, deceiving yourselves."},
+  {c:"do", a:"Theodore Roosevelt, “The Strenuous Life,” 1899", t:"Far better it is to dare mighty things, to win glorious triumphs, even though checkered by failure, than to take rank with those poor spirits who neither enjoy much nor suffer much, because they live in the gray twilight that knows not victory nor defeat."},
+  {c:"do", a:"Theodore Roosevelt, “The Strenuous Life,” 1899", t:"I wish to preach, not the doctrine of ignoble ease, but the doctrine of the strenuous life, the life of toil and effort, of labor and strife; to preach that highest form of success which comes, not to the man who desires mere easy peace, but to the man who does not shrink from danger, from hardship, or from bitter toil, and who out of these wins the splendid ultimate triumph."},
+  {c:"do", a:"Theodore Roosevelt, Labor Day address, 1903", t:"Far and away the best prize that life offers is the chance to work hard at work worth doing."},
+  {c:"do", a:"Theodore Roosevelt, 1903", t:"Nothing in this world is worth having or worth doing unless it means effort, pain, difficulty."},
+  {c:"do", a:"C. S. Lewis, The Screwtape Letters", t:"Courage is not simply one of the virtues but the form of every virtue at the testing point."},
+  {c:"do", a:"C. S. Lewis, Mere Christianity", t:"No man knows how bad he is till he has tried very hard to be good."},
+  {c:"do", a:"G. K. Chesterton, What’s Wrong with the World", t:"The Christian ideal has not been tried and found wanting. It has been found difficult; and left untried."},
+  {c:"do", a:"Martin Luther King Jr., Strength to Love", t:"The ultimate measure of a man is not where he stands in moments of comfort and convenience, but where he stands at times of challenge and controversy."},
+  {c:"do", a:"Martin Luther King Jr., 1960", t:"If you can’t fly, run. If you can’t run, walk. If you can’t walk, crawl. But by all means, keep moving."},
+  {c:"do", a:"Seneca, Letters", t:"It is not because things are difficult that we do not dare; it is because we do not dare that they are difficult."},
+  {c:"do", a:"Marcus Aurelius, Meditations", t:"The impediment to action advances action. What stands in the way becomes the way."},
+  {c:"do", a:"Jim Elliot", t:"He is no fool who gives what he cannot keep to gain that which he cannot lose."},
+  {c:"do", a:"Amy Carmichael", t:"We have all eternity to celebrate the victories, but only a few hours before sunset to win them."},
+  {c:"do", a:"William Carey", t:"Expect great things from God; attempt great things for God."},
+  {c:"do", a:"Frederick Douglass, 1857", t:"If there is no struggle, there is no progress."},
+  {c:"do", a:"Winston Churchill, Harrow School, 1941", t:"Never give in, never give in, never, never, never, never—in nothing, great or small, large or petty—never give in except to convictions of honour and good sense."},
+  {c:"do", a:"William Bradford, Of Plymouth Plantation", t:"All great and honourable actions are accompanied with great difficulties, and must be both enterprised and overcome with answerable courages."},
+  {c:"do", a:"Rudyard Kipling, “If—”", t:"If you can force your heart and nerve and sinew\nTo serve your turn long after they are gone,\nAnd so hold on when there is nothing in you\nExcept the Will which says to them: ‘Hold on!’"},
+  {c:"do", a:"Alfred, Lord Tennyson, “Ulysses”", t:"That which we are, we are;\nOne equal temper of heroic hearts,\nMade weak by time and fate, but strong in will\nTo strive, to seek, to find, and not to yield."},
+  {c:"do", a:"J. R. R. Tolkien, The Fellowship of the Ring", t:"“I wish it need not have happened in my time,” said Frodo. “So do I,” said Gandalf, “and so do all who live to see such times. But that is not for them to decide. All we have to decide is what to do with the time that is given us.”"},
+
+  // hard now, good later
+  {c:"hope", a:"Galatians 6:9", t:"And let us not grow weary of doing good, for in due season we will reap, if we do not give up."},
+  {c:"hope", a:"Romans 5:3–5", t:"We rejoice in our sufferings, knowing that suffering produces endurance, and endurance produces character, and character produces hope, and hope does not put us to shame, because God’s love has been poured into our hearts through the Holy Spirit who has been given to us."},
+  {c:"hope", a:"James 1:2–4", t:"Count it all joy, my brothers, when you meet trials of various kinds, for you know that the testing of your faith produces steadfastness. And let steadfastness have its full effect, that you may be perfect and complete, lacking in nothing."},
+  {c:"hope", a:"Hebrews 12:11", t:"For the moment all discipline seems painful rather than pleasant, but later it yields the peaceful fruit of righteousness to those who have been trained by it."},
+  {c:"hope", a:"2 Corinthians 4:16–18", t:"So we do not lose heart. Though our outer self is wasting away, our inner self is being renewed day by day. For this light momentary affliction is preparing for us an eternal weight of glory beyond all comparison, as we look not to the things that are seen but to the things that are unseen. For the things that are seen are transient, but the things that are unseen are eternal."},
+  {c:"hope", a:"Psalm 126:5–6", t:"Those who sow in tears shall reap with shouts of joy! He who goes out weeping, bearing the seed for sowing, shall come home with shouts of joy, bringing his sheaves with him."},
+  {c:"hope", a:"Isaiah 40:31", t:"But they who wait for the LORD shall renew their strength; they shall mount up with wings like eagles; they shall run and not be weary; they shall walk and not faint."},
+  {c:"hope", a:"Romans 8:18", t:"For I consider that the sufferings of this present time are not worth comparing with the glory that is to be revealed to us."},
+  {c:"hope", a:"1 Peter 5:10", t:"And after you have suffered a little while, the God of all grace, who has called you to his eternal glory in Christ, will himself restore, confirm, strengthen, and establish you."},
+  {c:"hope", a:"Philippians 1:6", t:"And I am sure of this, that he who began a good work in you will bring it to completion at the day of Jesus Christ."},
+  {c:"hope", a:"Psalm 30:5", t:"Weeping may tarry for the night, but joy comes with the morning."},
+  {c:"hope", a:"2 Timothy 4:7", t:"I have fought the good fight, I have finished the race, I have kept the faith."},
+  {c:"hope", a:"James 1:12", t:"Blessed is the man who remains steadfast under trial, for when he has stood the test he will receive the crown of life, which God has promised to those who love him."},
+  {c:"hope", a:"1 Corinthians 15:58", t:"Therefore, my beloved brothers, be steadfast, immovable, always abounding in the work of the Lord, knowing that in the Lord your labor is not in vain."},
+  {c:"hope", a:"Hebrews 10:35–36", t:"Therefore do not throw away your confidence, which has a great reward. For you have need of endurance, so that when you have done the will of God you may receive what is promised."},
+  {c:"hope", a:"Habakkuk 2:3", t:"For still the vision awaits its appointed time; it hastens to the end—it will not lie. If it seems slow, wait for it; it will surely come; it will not delay."},
+  {c:"hope", a:"Lamentations 3:22–23", t:"The steadfast love of the LORD never ceases; his mercies never come to an end; they are new every morning; great is your faithfulness."},
+  {c:"hope", a:"Proverbs 24:16", t:"For the righteous falls seven times and rises again."},
+  {c:"hope", a:"Micah 7:8", t:"Rejoice not over me, O my enemy; when I fall, I shall rise; when I sit in darkness, the LORD will be a light to me."},
+  {c:"hope", a:"Genesis 50:20", t:"As for you, you meant evil against me, but God meant it for good, to bring it about that many people should be kept alive, as they are today."},
+  {c:"hope", a:"Psalm 27:14", t:"Wait for the LORD; be strong, and let your heart take courage; wait for the LORD!"},
+  {c:"hope", a:"Isaiah 43:19", t:"Behold, I am doing a new thing; now it springs forth, do you not perceive it? I will make a way in the wilderness and rivers in the desert."},
+  {c:"hope", a:"Jacob Riis, The Making of an American", t:"When nothing seems to help, I go and look at a stonecutter hammering away at his rock, perhaps a hundred times without as much as a crack showing in it. Yet at the hundred and first blow it will split in two, and I know it was not that blow that did it, but all that had gone before."},
+  {c:"hope", a:"Henry Wadsworth Longfellow, “The Ladder of St. Augustine”", t:"The heights by great men reached and kept\nWere not attained by sudden flight,\nBut they, while their companions slept,\nWere toiling upward in the night."},
+  {c:"hope", a:"Helen Keller", t:"Character cannot be developed in ease and quiet. Only through experience of trial and suffering can the soul be strengthened, vision cleared, ambition inspired, and success achieved."},
+  {c:"hope", a:"Booker T. Washington, Up from Slavery", t:"Success is to be measured not so much by the position that one has reached in life as by the obstacles which he has overcome while trying to succeed."},
+  {c:"hope", a:"Thomas Paine, The American Crisis", t:"Tyranny, like hell, is not easily conquered; yet we have this consolation with us, that the harder the conflict, the more glorious the triumph. What we obtain too cheap, we esteem too lightly."},
+  {c:"hope", a:"Charles Spurgeon", t:"By perseverance the snail reached the ark."},
+  {c:"hope", a:"C. S. Lewis, Mere Christianity", t:"Imagine yourself as a living house. God comes in to rebuild that house. At first, perhaps, you can understand what He is doing. He is getting the drains right and stopping the leaks in the roof and so on: you knew that those jobs needed doing and so you are not surprised. But presently He starts knocking the house about in a way that hurts abominably and does not seem to make any sense. What on earth is He up to? The explanation is that He is building quite a different house from the one you thought of—throwing out a new wing here, putting on an extra floor there, running up towers, making courtyards. You thought you were going to be made into a decent little cottage: but He is building a palace. He intends to come and live in it Himself."},
+  {c:"hope", a:"J. R. R. Tolkien, The Return of the King", t:"Hope returned to him. For like a shaft, clear and cold, the thought pierced him that in the end the Shadow was only a small and passing thing: there was light and high beauty for ever beyond its reach."},
+  {c:"hope", a:"John Newton, “Amazing Grace”", t:"Through many dangers, toils and snares,\nI have already come;\n’Tis grace hath brought me safe thus far,\nAnd grace will lead me home."},
+
+  // God is in control
+  {c:"god", a:"Romans 8:28", t:"And we know that for those who love God all things work together for good, for those who are called according to his purpose."},
+  {c:"god", a:"Proverbs 16:9", t:"The heart of man plans his way, but the LORD establishes his steps."},
+  {c:"god", a:"Proverbs 19:21", t:"Many are the plans in the mind of a man, but it is the purpose of the LORD that will stand."},
+  {c:"god", a:"Proverbs 3:5–6", t:"Trust in the LORD with all your heart, and do not lean on your own understanding. In all your ways acknowledge him, and he will make straight your paths."},
+  {c:"god", a:"Jeremiah 29:11", t:"For I know the plans I have for you, declares the LORD, plans for welfare and not for evil, to give you a future and a hope."},
+  {c:"god", a:"Isaiah 41:10", t:"Fear not, for I am with you; be not dismayed, for I am your God; I will strengthen you, I will help you, I will uphold you with my righteous right hand."},
+  {c:"god", a:"Isaiah 43:2", t:"When you pass through the waters, I will be with you; and through the rivers, they shall not overwhelm you; when you walk through fire you shall not be burned, and the flame shall not consume you."},
+  {c:"god", a:"Isaiah 55:8–9", t:"For my thoughts are not your thoughts, neither are your ways my ways, declares the LORD. For as the heavens are higher than the earth, so are my ways higher than your ways and my thoughts than your thoughts."},
+  {c:"god", a:"Isaiah 46:9–10", t:"I am God, and there is none like me, declaring the end from the beginning and from ancient times things not yet done, saying, “My counsel shall stand, and I will accomplish all my purpose.”"},
+  {c:"god", a:"Psalm 46:1–2", t:"God is our refuge and strength, a very present help in trouble. Therefore we will not fear though the earth gives way, though the mountains be moved into the heart of the sea."},
+  {c:"god", a:"Psalm 46:10", t:"Be still, and know that I am God. I will be exalted among the nations, I will be exalted in the earth!"},
+  {c:"god", a:"Psalm 23:4", t:"Even though I walk through the valley of the shadow of death, I will fear no evil, for you are with me; your rod and your staff, they comfort me."},
+  {c:"god", a:"Psalm 115:3", t:"Our God is in the heavens; he does all that he pleases."},
+  {c:"god", a:"Job 42:2", t:"I know that you can do all things, and that no purpose of yours can be thwarted."},
+  {c:"god", a:"Daniel 2:20–21", t:"Blessed be the name of God forever and ever, to whom belong wisdom and might. He changes times and seasons; he removes kings and sets up kings; he gives wisdom to the wise and knowledge to those who have understanding."},
+  {c:"god", a:"Lamentations 3:37", t:"Who has spoken and it came to pass, unless the Lord has commanded it?"},
+  {c:"god", a:"Romans 8:31", t:"What then shall we say to these things? If God is for us, who can be against us?"},
+  {c:"god", a:"Romans 8:38–39", t:"For I am sure that neither death nor life, nor angels nor rulers, nor things present nor things to come, nor powers, nor height nor depth, nor anything else in all creation, will be able to separate us from the love of God in Christ Jesus our Lord."},
+  {c:"god", a:"John 16:33", t:"I have said these things to you, that in me you may have peace. In the world you will have tribulation. But take heart; I have overcome the world."},
+  {c:"god", a:"Matthew 6:34", t:"Therefore do not be anxious about tomorrow, for tomorrow will be anxious for itself. Sufficient for the day is its own trouble."},
+  {c:"god", a:"Philippians 4:6–7", t:"Do not be anxious about anything, but in everything by prayer and supplication with thanksgiving let your requests be made known to God. And the peace of God, which surpasses all understanding, will guard your hearts and your minds in Christ Jesus."},
+  {c:"god", a:"2 Corinthians 12:9", t:"But he said to me, “My grace is sufficient for you, for my power is made perfect in weakness.” Therefore I will boast all the more gladly of my weaknesses, so that the power of Christ may rest upon me."},
+  {c:"god", a:"Nahum 1:7", t:"The LORD is good, a stronghold in the day of trouble; he knows those who take refuge in him."},
+  {c:"god", a:"Exodus 14:14", t:"The LORD will fight for you, and you have only to be silent."},
+  {c:"god", a:"2 Chronicles 20:15", t:"Do not be afraid and do not be dismayed at this great horde, for the battle is not yours but God’s."},
+  {c:"god", a:"Charles Spurgeon", t:"God is too good to be unkind, and He is too wise to be mistaken. And when we cannot trace His hand, we must trust His heart."},
+  {c:"god", a:"Julian of Norwich", t:"All shall be well, and all shall be well, and all manner of thing shall be well."},
+  {c:"god", a:"Betsie ten Boom, in The Hiding Place", t:"There is no pit so deep that He is not deeper still."},
+  {c:"god", a:"Oswald Chambers, My Utmost for His Highest", t:"Faith never knows where it is being led, but it loves and knows the One who is leading."},
+  {c:"god", a:"Horatio Spafford, “It Is Well with My Soul”", t:"When peace, like a river, attendeth my way,\nWhen sorrows like sea billows roll;\nWhatever my lot, Thou hast taught me to say,\nIt is well, it is well with my soul."},
+  {c:"god", a:"Martin Luther, “A Mighty Fortress Is Our God”", t:"A mighty fortress is our God,\nA bulwark never failing;\nOur helper He amid the flood\nOf mortal ills prevailing."}
+];
+function quoteIndex(k){
+  // walks a shuffled deck of every quote, reshuffled each time through, seeded from the
+  // date so both devices agree all day; nothing repeats until the whole list has been seen
+  var n = QUOTES.length, p = parseKey(k);
+  var day = Math.floor(Date.UTC(p.y, p.m-1, p.d) / 86400000);
+  var deck = function(cyc){
+    var s = (cyc * 2654435761 + 97) >>> 0, a = [];
+    var rnd = function(){ s = (s + 0x6D2B79F5) >>> 0; var t = s; t = Math.imul(t ^ (t>>>15), t|1);
+      t ^= t + Math.imul(t ^ (t>>>7), t|61); return ((t ^ (t>>>14)) >>> 0) / 4294967296; };
+    for(var i=0;i<n;i++) a.push(i);
+    for(var j=n-1;j>0;j--){ var r = Math.floor(rnd()*(j+1)), x = a[j]; a[j] = a[r]; a[r] = x; }
+    return a;
+  };
+  var cyc = Math.floor(day / n), pos = day - cyc*n, d = deck(cyc);
+  // a new pass never opens with the quote the last pass ended on
+  if(n > 1 && d[0] === deck(cyc-1)[n-1]){ var y = d[0]; d[0] = d[1]; d[1] = y; }
+  return d[pos];
+}
+function quoteCatName(c){ for(var i=0;i<QUOTE_CATS.length;i++){ if(QUOTE_CATS[i][0]===c) return QUOTE_CATS[i][1]; } return ""; }
 function monthName(y,m){ return new Date(y,m-1,1).toLocaleDateString(undefined,{month:"long",year:"numeric"}); }
 function daysInMonth(y,m){ return new Date(y,m,0).getDate(); }
 
@@ -1464,7 +1602,8 @@ function render(){
 
   html += '<nav><button data-page="today" class="'+(page==="today"?"on":"")+'">Today</button>'+
           '<button data-page="record" class="'+(page==="record"?"on":"")+'">Record</button>'+
-          '<button data-page="goals" class="'+(page==="goals"?"on":"")+'">Goals</button></nav>';
+          '<button data-page="goals" class="'+(page==="goals"?"on":"")+'">Goals</button>'+
+          '<button data-page="quotes" class="'+(page==="quotes"?"on":"")+'">Quotes</button></nav>';
 
   if(page === "today"){
     var isNext = viewDay === nextUnloggedDay();
@@ -1499,6 +1638,13 @@ function render(){
               '<button type="button" class="goalbtn" id="goalRead" data-v="'+(gRead?"yes":"")+'">'+
               (gRead ? "Read \u2713" : "Mark as read")+'</button></div>';
     }
+
+    // Encouragement: one quote or verse for the day this card speaks for. Nothing to mark.
+    var qi = quoteIndex(effDate || keyOf()), qq = QUOTES[qi];
+    html += '<div class="enc" id="encBox">'+
+            '<div class="xchead"><span class="goaltag">Encouragement</span><span class="xcopt">'+esc(quoteCatName(qq.c))+' \u00b7 '+(qi+1)+' of '+QUOTES.length+'</span></div>'+
+            '<div class="enctext">'+esc(qq.t)+'</div>'+
+            '<div class="encby">\u2014 '+esc(qq.a)+'</div></div>';
 
     // Extra credit: optional, tied to the calendar day, offered on the current day and on
     // past-dated days for backfill — never on days being read ahead. An answer already
@@ -1879,6 +2025,23 @@ function render(){
     if(grKeys.length) html += rhythm("Read", grKeys.length, countDays(grKeys[0], keyOf(), null), "days", grKeys[0]);
     html += '<div class="note">G: every Monday, rewrite the goals in my journal and note any achieved \u2014 the G toggle appears on Mondays. '+
             'Read: one goal is picked for each day and shown under the reading questions; tap Mark as read.</div></section>';
+  }
+
+  if(page === "quotes"){
+    var todayQi = quoteIndex(keyOf());
+    html += '<section class="card"><div class="sechead"><span>Encouragement</span><span>'+QUOTES.length+' quotes &amp; verses</span></div>';
+    QUOTE_CATS.forEach(function(cat){
+      var start = -1, items = "";
+      QUOTES.forEach(function(q,i){
+        if(q.c !== cat[0]) return;
+        if(start < 0) start = i + 1;
+        items += '<li'+(i===todayQi?' class="today"':'')+'><span class="qt">'+esc(q.t)+'</span>'+
+                 '<span class="qa">— '+esc(q.a)+(i===todayQi?' <small>today</small>':'')+'</span></li>';
+      });
+      html += '<div class="goaltag qcat">'+esc(cat[1])+'</div><ol class="goals quotes" start="'+start+'">'+items+'</ol>';
+    });
+    html += '<div class="note">One of these is picked for each day and shown under the reading questions on the Today tab. '+
+            'Every one comes around before any repeats. Scripture is quoted from the ESV.</div></section>';
   }
 
   app.innerHTML = html;
