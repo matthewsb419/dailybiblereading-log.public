@@ -246,6 +246,60 @@ textarea::placeholder{color:var(--ghost)}
 .mgrid>span.ed:hover,.mgrid>span.ed:focus-visible,.mgrid>span.pick{outline:2px solid var(--parchment);outline-offset:1px}
 .calsheet{margin:0 0 14px;padding:12px 14px;border:1px solid var(--brass);border-radius:10px;background:var(--track)}
 .calsheet .calset{flex-wrap:wrap;gap:12px 18px;margin-top:10px}
+.stepline{flex-basis:100%;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.stepin{width:104px;background:var(--ink);border:1px solid var(--line);border-radius:16px;color:var(--parchment);
+ font-size:13px;padding:5px 12px;font-variant-numeric:tabular-nums}
+.stepin:focus{outline:2px solid var(--brass);outline-offset:1px;border-color:transparent}
+.stepin::placeholder{color:var(--ghost)}
+.stepneed{font-size:12px;color:var(--muted);opacity:.8}
+.shero{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:8px 0 2px}
+.shero b{font-size:34px;font-weight:600;color:var(--parchment);letter-spacing:-.01em;line-height:1.1}
+.shero span{font-size:13px;color:var(--muted)}
+.tgoal{font-size:11px;color:var(--muted);text-align:right}
+.skeys{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:12px}
+.skeys span{display:flex;align-items:center;gap:6px}
+.skeys i,.stip i{display:inline-block;width:16px;height:0;border-top:2px solid var(--brass)}
+.skeys i.g,.stip i.g{border-top:2px dashed var(--parchment)}
+.skeys i.s,.stip i.s{border-top:2px dotted var(--muted)}
+.stip i.n{border-top-color:transparent}
+.schart{position:relative;margin:10px 0 2px;touch-action:pan-y;border-radius:6px}
+.schart:focus-visible{outline:2px solid var(--brass);outline-offset:3px}
+.schart svg{display:block;overflow:visible}
+.schart .grid{stroke:var(--line);stroke-width:1}
+.schart .axis{fill:var(--muted);font-size:10px;font-variant-numeric:tabular-nums}
+.schart .lbl{fill:var(--muted);font-size:10px;paint-order:stroke;stroke:var(--raised);stroke-width:3px;stroke-linejoin:round}
+.schart .lbl.strong{fill:var(--parchment);font-weight:600}
+.schart .act{stroke:var(--brass);stroke-width:2;fill:none;stroke-linejoin:round;stroke-linecap:round}
+.schart .actarea{fill:var(--brass);opacity:.1}
+.schart .pace{stroke:var(--parchment);stroke-width:1.5;stroke-dasharray:5 4;opacity:.7}
+.schart .pace2{stroke:var(--muted);stroke-width:1.5;stroke-dasharray:2 4}
+.schart .dot{fill:var(--brass);stroke:var(--raised);stroke-width:2}
+.schart .xh{stroke:var(--muted);stroke-width:1}
+.schart .sb{fill:var(--brass)}
+.schart .sb.hot{fill:var(--parchment)}
+.schart .need{stroke:var(--parchment);stroke-width:1;stroke-dasharray:4 3;opacity:.65}
+.stip{position:absolute;top:0;pointer-events:none;background:var(--ink);border:1px solid var(--line);border-radius:8px;
+ padding:6px 9px;font-size:11px;color:var(--muted);white-space:nowrap;z-index:2}
+.stip .stipd{margin-bottom:3px}
+.stip .stipr{display:flex;align-items:center;gap:6px}
+.stip b{font-size:13px;color:var(--parchment);font-weight:600;font-variant-numeric:tabular-nums}
+.savg{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;margin-top:20px;flex-wrap:wrap}
+.savg .eyebrow{margin-bottom:2px}
+.savgn{font-size:13px;color:var(--muted)}
+.savgn b{font-size:24px;font-weight:600;color:var(--parchment);margin-right:3px}
+.savg .seg button.sel{background:var(--brass);color:var(--ink)}
+.stiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}
+.stile{border:1px solid var(--line);border-radius:8px;padding:9px 11px;min-width:0}
+.stile span{display:block;font-size:11px;color:var(--muted)}
+.stile b{display:block;font-size:18px;font-weight:600;color:var(--parchment);margin-top:2px}
+.stile small{display:block;font-size:11px;color:var(--muted);margin-top:1px}
+.spass{font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--line);border-radius:10px;
+ padding:1px 7px;color:var(--muted);margin-left:6px;font-weight:600;white-space:nowrap}
+.spass.on{border-color:var(--brass);color:var(--brass)}
+.slog summary{cursor:pointer;font-size:12px;color:var(--brass);margin-top:12px}
+.slog table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;font-variant-numeric:tabular-nums}
+.slog td{padding:4px 2px;border-bottom:1px solid var(--line);color:var(--muted)}
+.slog td+td{text-align:right;color:var(--parchment)}
 .xchead{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .xctag{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--brass)}
 .xcopt{font-size:11px;color:var(--muted);flex-shrink:0}
@@ -547,7 +601,7 @@ function syncNow(manual){
       var changed = false;
       try { changed = mergeRemote(JSON.parse(remoteText)); } catch(e){}
       if(changed){
-        if(page === "today" && !document.querySelector("textarea:focus")) viewDay = currentDay();
+        if(page === "today" && !document.querySelector("textarea:focus,input:focus")) viewDay = currentDay();
         save(); render();
       }
     }
@@ -575,7 +629,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
-var APP_VER = "v22";
+var APP_VER = "v23";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -975,14 +1029,16 @@ function tNow(f){ return trackerBy(f).shift < 0 ? yKey() : keyOf(); }
 // state.marks[day] = {p:"yes"|"no"|"", pAt:iso, ...}, keyed to the day the answer DESCRIBES.
 // A cleared mark keeps its time so the clear syncs too.
 function shiftKey(k, n){ var d = asDate(k); d.setDate(d.getDate()+n); return keyOf(d); }
+// "st" (steps, a number) rides the same store as the yes/no trackers
+function hasVal(f, x){ return f === "st" ? (typeof x === "number" && isFinite(x)) : (x === "yes" || x === "no"); }
 function markVal(f, dk){
   var r = (state.marks||{})[dk], v = r && r[f];
-  return (v==="yes" || v==="no") ? v : undefined;
+  return hasVal(f, v) ? v : undefined;
 }
 function putMark(f, dk, v){
   if(!state.marks) state.marks = {};
   var r = state.marks[dk] || (state.marks[dk] = {});
-  r[f] = v || ""; r[f+"At"] = new Date().toISOString();
+  r[f] = (v === "" || v == null) ? "" : v; r[f+"At"] = new Date().toISOString();
 }
 function mergeMarks(src){
   // per day and tracker, the most recent edit wins
@@ -990,9 +1046,9 @@ function mergeMarks(src){
   if(!state.marks) state.marks = {};
   Object.keys(src||{}).forEach(function(dk){
     var theirs = src[dk] || {}, mine = state.marks[dk] || {};
-    TRACKERS.forEach(function(t){
-      var at = t.id+"At";
-      if(theirs[at] && theirs[at] > (mine[at]||"")){ mine[t.id] = theirs[t.id]||""; mine[at] = theirs[at]; changed = true; }
+    TRACKERS.map(function(t){ return t.id; }).concat("st").forEach(function(f){
+      var at = f+"At";
+      if(theirs[at] && theirs[at] > (mine[at]||"")){ mine[f] = theirs[f] != null ? theirs[f] : ""; mine[at] = theirs[at]; changed = true; }
     });
     if(Object.keys(mine).length) state.marks[dk] = mine;
   });
@@ -1002,23 +1058,304 @@ function setMark(f, dk, v){
   // Set (v = "yes"/"no") or clear (v = "") tracker f for day dk from the calendar.
   // If a written entry already holds this answer, or is the entry whose Today card asks it,
   // edit that entry so the Today card and the calendar never disagree; otherwise store a mark.
-  var t = trackerBy(f), sd = shiftKey(dk, -t.shift), today = keyOf(), cur = currentDay();
+  var shift = f === "st" ? -1 : trackerBy(f).shift, sd = shiftKey(dk, -shift), today = keyOf(), cur = currentDay();
   var holder = null, host = null;
   loggedDays().forEach(function(n){
     var e = state.entries[n];
     if(e.date !== sd || staleEntry(e)) return;
-    if((e[f]==="yes" || e[f]==="no") && (!holder || (e.savedAt||"") > (holder.savedAt||""))) holder = e;
+    if(hasVal(f, e[f]) && (!holder || (e.savedAt||"") > (holder.savedAt||""))) holder = e;
     if(!host && (sd < today || n === cur)) host = e;
   });
   var e = holder || host;
   if(e){
-    if(v) e[f] = v; else delete e[f];
+    if(v !== "" && v != null) e[f] = v; else delete e[f];
     e.savedAt = new Date().toISOString();
-    if(markVal(f, dk)) putMark(f, dk, "");
+    if(markVal(f, dk) !== undefined) putMark(f, dk, "");
   } else {
     putMark(f, dk, v);
   }
   save();
+}
+
+/* ---------- steps: walking goal through Valentine's Day ---------- */
+// The count on the Today card describes YESTERDAY, like P/M: entry.st, or state.marks[day].st
+// when filled in from the calendar. Main goal first; once it is reached the stretch goal
+// takes over everywhere (daily need, projections, the 7-day grade).
+var STEP_START = "2026-09-13";
+var STEP_END   = "2027-02-14";
+var STEP_GOAL = 1000000, STEP_STRETCH = 2000000;
+// below 100% of what was needed; 100%+ is an A, and A+ when every day beat the need
+var STEP_GRADES = [[95,"B+"],[90,"B"],[85,"B−"],[80,"C+"],[75,"C"],[70,"C−"],[65,"D+"],[60,"D"],[55,"D−"]];
+var stepRange = "W", stepResize = null;
+
+function fmtN(n){ return Math.round(n).toLocaleString("en-US"); }
+function compactN(n){
+  if(n >= 999500) return (Math.round(n/1e5)/10)+"M";
+  return n >= 1000 ? Math.round(n/1000)+"K" : String(Math.round(n));
+}
+function parseSteps(s){ var d = String(s||"").replace(/[^\d]/g, ""); return d ? Math.min(Number(d), 250000) : null; }
+function stepGrade(p){ for(var i=0;i<STEP_GRADES.length;i++){ if(p>=STEP_GRADES[i][0]) return STEP_GRADES[i][1]; } return "F"; }
+function stepTarget(total){ return total >= STEP_GOAL ? STEP_STRETCH : STEP_GOAL; }
+function stepMap(){
+  // day walked -> steps; the most recent edit wins, same as the trackers
+  var m = {};
+  Object.keys(state.entries).forEach(function(k){
+    var e = state.entries[k];
+    if(!e.date || !hasVal("st", e.st)) return;
+    var dk = shiftKey(e.date, -1), cur = m[dk];
+    if(!cur || (e.savedAt||"") > cur.at) m[dk] = {v:e.st, at:e.savedAt||""};
+  });
+  Object.keys(state.marks||{}).forEach(function(dk){
+    var r = state.marks[dk], at = r.stAt||"", cur = m[dk];
+    if(hasVal("st", r.st) && (!cur || at > cur.at)) m[dk] = {v:r.st, at:at};
+  });
+  var out = {};
+  Object.keys(m).forEach(function(k){ out[k] = m[k].v; });
+  return out;
+}
+function stepStats(){
+  var map = stepMap(), today = keyOf(), yk = yKey();
+  var last = yk < STEP_END ? yk : STEP_END;              // latest day that can have a count
+  var span = countDays(STEP_START, STEP_END), pace = STEP_GOAL / span;
+  var days = [], total = 0, logged = 0, best = 0, bestK = null, overPace = 0;
+  for(var d = asDate(STEP_START); keyOf(d) <= last; d.setDate(d.getDate()+1)){
+    var k = keyOf(d), v = map[k];
+    days.push({k:k, v:v});
+    if(v != null){ total += v; logged++; if(v > best){ best = v; bestK = k; } if(v >= pace) overPace++; }
+  }
+  // yesterday with no count yet is still open, not a zero
+  var closed = days.length && days[days.length-1].v == null && days[days.length-1].k === yk ? days.slice(0, -1) : days;
+  var streak = 0;
+  for(var i = closed.length-1; i >= 0 && closed[i].v != null && closed[i].v >= pace; i--) streak++;
+  var from = (map[yk] != null || yk < STEP_START) ? today : yk;
+  if(from < STEP_START) from = STEP_START;
+  var daysLeft = from <= STEP_END ? countDays(from, STEP_END) : 0;
+  var target = stepTarget(total), remain = Math.max(0, target - total);
+  var need = daysLeft ? Math.ceil(remain / daysLeft) : 0;
+  var avg = logged ? total / logged : 0;
+  var hitDate = (remain > 0 && avg > 0) ? shiftKey(from, Math.ceil(remain / avg) - 1) : null;
+  // trailing 7 days, graded against what the goal needed per day when that stretch began
+  var w = closed.slice(-7), before = 0, taken = 0, allOver = w.length > 0;
+  closed.slice(0, closed.length - w.length).forEach(function(x){ before += x.v || 0; });
+  var wNeed = w.length ? Math.max(0, stepTarget(before) - before) / countDays(w[0].k, STEP_END) : 0;
+  w.forEach(function(x){ taken += x.v || 0; if(!(x.v > wNeed)) allOver = false; });
+  var required = Math.ceil(wNeed * w.length);
+  var pct = required > 0 ? taken / required * 100 : 100;
+  return {map:map, days:days, total:total, logged:logged, best:best, bestK:bestK, pace:pace, overPace:overPace,
+          streak:streak, counted:closed.length, from:from, daysLeft:daysLeft, target:target, need:need, avg:avg,
+          projected: total + avg * daysLeft, hitDate:hitDate, span:span, last:last,
+          w:w, required:required, taken:taken, pct:pct, pass: w.length > 0 && pct >= 100,
+          grade: !w.length ? null : (pct >= 100 ? (allOver ? "A+" : "A") : stepGrade(pct))};
+}
+function stepNeedText(){
+  var s = stepStats();
+  if(s.total >= STEP_STRETCH) return "Stretch goal done — "+fmtN(s.total)+" steps";
+  if(!s.daysLeft) return fmtN(s.total)+" steps — the goal window has closed";
+  return fmtN(s.need)+"/day to reach "+fmtN(s.target)+" by Feb 14"+(s.total >= STEP_GOAL ? " · goal done, now the stretch" : "");
+}
+function stepsRow(entry, stale, effDate){
+  // Today card, under P/M: yesterday's steps, then what each day needs from here
+  if(!effDate) return "";
+  var dk = shiftKey(effDate, -1);
+  if(dk < STEP_START || dk > STEP_END) return "";
+  var v = stale ? undefined : entry.st;
+  if(!hasVal("st", v)) v = markVal("st", dk);
+  return '<div class="stepline"><label class="pmlab" for="steps">Steps</label>'+
+         '<input id="steps" class="stepin" data-s="1" type="text" inputmode="numeric" autocomplete="off" placeholder="0" value="'+
+         (hasVal("st", v) ? fmtN(v) : "")+'">'+
+         '<span class="stepneed" id="stepNeed">'+esc(stepNeedText())+'</span></div>';
+}
+function stepsCard(){
+  if(keyOf() <= STEP_START) return "";
+  var s = stepStats(), stretch = s.total >= STEP_GOAL;
+  var expPct = Math.min(100, s.days.length / s.span * 100);
+  var meter = function(lab, goal){
+    var pct = Math.min(100, s.total / goal * 100);
+    return '<div class="trow"><span class="tlab">'+lab+'</span>'+
+           '<div class="bar sm"><i style="width:'+pct+'%"></i><u style="left:'+expPct+'%" title="Where pace puts you today"></u></div>'+
+           '<span class="tpct">'+pct.toFixed(pct < 10 ? 1 : 0)+'%</span><span class="tgoal">'+compactN(goal)+'</span></div>';
+  };
+  var tile = function(lab, val, sub){
+    return '<div class="stile"><span>'+esc(lab)+'</span><b>'+esc(val)+'</b>'+(sub ? '<small>'+esc(sub)+'</small>' : '')+'</div>';
+  };
+  var plural = function(n, w){ return n+" "+w+(n === 1 ? "" : "s"); };
+  var h = '<section class="card" style="margin-top:20px" id="stepsCard">'+
+    '<div class="sechead"><span>Steps · Valentine’s Day</span><span>'+
+    (s.daysLeft ? plural(s.daysLeft, "day")+' left' : 'Window closed')+'</span></div>'+
+    '<div class="shero"><b>'+fmtN(s.total)+'</b><span>steps since '+esc(shortDate(STEP_START))+'</span></div>'+
+    '<div class="trows">'+meter("Goal", STEP_GOAL)+meter("Stretch", STEP_STRETCH)+'</div>'+
+    '<div class="skeys"><span><i></i>Taken</span><span><i class="g"></i>Goal pace</span><span><i class="s"></i>Stretch pace</span></div>'+
+    '<div class="schart" id="stepCum" role="img" aria-label="Running total of steps against goal pace and stretch pace"></div>';
+
+  h += '<div class="savg"><div><div class="eyebrow">Daily average</div>'+
+       '<div class="savgn"><b id="stepAvg">—</b>steps</div><div class="sub" id="stepAvgRange"></div></div>'+
+       '<div class="seg" id="stepRange">'+
+       [["W","Week"],["M","Month"],["All","All"]].map(function(r){
+         return '<button data-r="'+r[0]+'"'+(stepRange === r[0] ? ' class="sel"' : '')+'>'+r[1]+'</button>';
+       }).join("")+'</div></div>'+
+       '<div class="schart" id="stepBars" role="img" aria-label="Steps per day"></div>';
+
+  var reach = s.total >= STEP_STRETCH ? "Done" : (s.hitDate ? (s.hitDate <= STEP_END ? shortDate(s.hitDate) : "After Feb 14") : "—");
+  h += '<div class="stiles">'+
+    tile("Needed per day", s.daysLeft && s.total < STEP_STRETCH ? fmtN(s.need) : "—", stretch ? "for the stretch goal" : "for the goal")+
+    tile("Daily average", s.logged ? fmtN(s.avg) : "—", plural(s.logged, "day")+" logged")+
+    tile("Best day", s.best ? fmtN(s.best) : "—", s.bestK ? shortDate(s.bestK) : "")+
+    tile("Streak", plural(s.streak, "day"), s.overPace+" of "+s.counted+" at "+fmtN(s.pace)+"+")+
+    tile("By Feb 14", s.logged ? compactN(s.projected) : "—", "at your daily average")+
+    tile("Reach "+compactN(s.target), reach, s.total >= STEP_STRETCH ? "stretch goal done" : "at your daily average")+
+    '</div>';
+
+  if(s.w.length){
+    h += '<div class="arow" style="margin-top:14px"><span class="tlab">Last 7</span>'+
+         '<span class="det">'+fmtN(s.taken)+' of '+fmtN(s.required)+' needed'+
+         (s.pass ? '<b class="spass on">Pass</b>' : '<b class="spass">Short '+fmtN(s.required - s.taken)+'</b>')+'</span>'+
+         '<span class="apct'+(s.pass ? " on" : "")+'">'+Math.min(999, s.pct).toFixed(0)+'%<b>'+s.grade+'</b></span></div>';
+  }
+  h += '<div class="note">Last 7 is graded on what the goal needed each day when that week began: 100% is an A, '+
+       'and A+ means every day beat it. Days with no count are zeros — tap the day on the calendar to fill one in.</div>';
+
+  var rows = s.days.filter(function(x){ return x.v != null; }).reverse();
+  if(rows.length){
+    h += '<details class="slog"><summary>Daily log</summary><table>';
+    rows.forEach(function(x){ h += '<tr><td>'+esc(shortDate(x.k))+'</td><td>'+fmtN(x.v)+'</td></tr>'; });
+    h += '</table></details>';
+  }
+  return h + '</section>';
+}
+function stepTip(date, rows){
+  // values lead, labels follow; each row keyed by a short line in its series style
+  return '<div class="stipd">'+esc(date)+'</div>'+rows.map(function(r){
+    return '<div class="stipr"><i class="'+(r[2]||"")+'"></i><b>'+r[1]+'</b>'+esc(r[0])+'</div>';
+  }).join("");
+}
+function hoverLayer(box, n, idxAt, paint, startIdx){
+  // one tooltip per chart: the pointer snaps to the nearest day, arrow keys step through
+  var tip = document.createElement("div"), cur = -1;
+  tip.className = "stip"; tip.hidden = true; box.appendChild(tip);
+  var show = function(i){
+    cur = Math.max(0, Math.min(n-1, i));
+    var r = paint(cur);
+    tip.innerHTML = r.html; tip.hidden = false;
+    var left = r.x + 12, tw = tip.offsetWidth;
+    if(left + tw > box.clientWidth) left = r.x - tw - 12;
+    tip.style.left = Math.max(0, left)+"px";
+  };
+  var hide = function(){ cur = -1; tip.hidden = true; paint(-1); };
+  box.tabIndex = 0;
+  box.onpointermove = box.onpointerdown = function(ev){ show(idxAt(ev.clientX - box.getBoundingClientRect().left)); };
+  box.onpointerleave = function(ev){ if(ev.pointerType === "mouse") hide(); };
+  box.onblur = hide;
+  box.onkeydown = function(ev){
+    if(ev.key === "ArrowLeft" || ev.key === "ArrowRight"){
+      ev.preventDefault(); show(cur < 0 ? startIdx : cur + (ev.key === "ArrowRight" ? 1 : -1));
+    } else if(ev.key === "Escape") hide();
+  };
+}
+function drawCum(box, s){
+  var W = Math.max(260, box.clientWidth), H = 180, L = 40, R = 48, T = 14, B = 22;
+  var pw = W-L-R, ph = H-T-B, n = s.span;
+  var ymax = Math.max(STEP_STRETCH, Math.ceil(s.total * 1.05 / 250000) * 250000);
+  var X = function(i){ return L + (n > 1 ? i/(n-1) : 0) * pw; };
+  var Y = function(v){ return T + ph - v/ymax*ph; };
+  var paceAt = function(goal, i){ return goal * (i+1) / n; };
+  var cum = [], run = 0;
+  s.days.forEach(function(x){ run += x.v || 0; cum.push(run); });
+  var o = '<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" aria-hidden="true">';
+  for(var q = 0; q <= 4; q++){
+    var gv = ymax*q/4, gy = Y(gv);
+    o += '<line class="grid" x1="'+L+'" x2="'+(L+pw)+'" y1="'+gy+'" y2="'+gy+'"/>'+
+         '<text class="axis" x="'+(L-6)+'" y="'+(gy+3)+'" text-anchor="end">'+(gv ? compactN(gv) : "0")+'</text>';
+  }
+  for(var i = 1; i < n; i++){
+    var mk = shiftKey(STEP_START, i);
+    if(mk.slice(8) === "01") o += '<text class="axis" x="'+X(i)+'" y="'+(H-6)+'" text-anchor="middle">'+
+      esc(asDate(mk).toLocaleDateString(undefined, {month:"short"}))+'</text>';
+  }
+  o += '<line class="pace2" x1="'+X(0)+'" y1="'+Y(paceAt(STEP_STRETCH,0))+'" x2="'+X(n-1)+'" y2="'+Y(STEP_STRETCH)+'"/>'+
+       '<line class="pace" x1="'+X(0)+'" y1="'+Y(paceAt(STEP_GOAL,0))+'" x2="'+X(n-1)+'" y2="'+Y(STEP_GOAL)+'"/>'+
+       '<text class="lbl" x="'+(L+pw+6)+'" y="'+(Y(STEP_GOAL)+3)+'">Goal</text>'+
+       '<text class="lbl" x="'+(L+pw+6)+'" y="'+(Y(STEP_STRETCH)+3)+'">Stretch</text>';
+  if(cum.length){
+    var pts = cum.map(function(v, j){ return X(j).toFixed(1)+","+Y(v).toFixed(1); });
+    var li = cum.length-1;
+    o += '<path class="actarea" d="M'+X(0).toFixed(1)+','+Y(0)+' L'+pts.join(" L")+' L'+X(li).toFixed(1)+','+Y(0)+' Z"/>'+
+         '<path class="act" d="M'+pts.join(" L")+'"/>'+
+         '<circle class="dot" cx="'+X(li)+'" cy="'+Y(cum[li])+'" r="4"/>'+
+         '<text class="lbl strong" x="'+X(li)+'" y="'+(Y(cum[li])-10)+'" text-anchor="'+
+         (li < n*0.08 ? "start" : (li > n*0.85 ? "end" : "middle"))+'">'+compactN(cum[li])+'</text>';
+  }
+  o += '<line class="xh" y1="'+T+'" y2="'+(T+ph)+'" x1="0" x2="0" visibility="hidden"/></svg>';
+  box.innerHTML = o;
+  var xh = box.querySelector(".xh");
+  hoverLayer(box, n, function(x){ return Math.round((x-L)/pw*(n-1)); }, function(j){
+    if(j < 0){ xh.setAttribute("visibility", "hidden"); return null; }
+    var x = X(j);
+    xh.setAttribute("x1", x); xh.setAttribute("x2", x); xh.setAttribute("visibility", "visible");
+    var rows = j < cum.length ? [["taken", fmtN(cum[j]), ""]] : [];
+    rows.push(["goal pace", fmtN(paceAt(STEP_GOAL, j)), "g"], ["stretch pace", fmtN(paceAt(STEP_STRETCH, j)), "s"]);
+    return {x:x, html: stepTip(shortDate(shiftKey(STEP_START, j)), rows)};
+  }, Math.max(0, cum.length-1));
+}
+function drawBars(box, s){
+  var endK = s.last, startK, n;
+  if(stepRange === "All"){ startK = STEP_START; n = Math.max(1, countDays(STEP_START, endK)); }
+  else { n = stepRange === "M" ? 30 : 7; startK = shiftKey(endK, -(n-1)); }
+  var list = [], sum = 0, cnt = 0, top = 0, inGoal = 0;
+  for(var i = 0; i < n; i++){
+    var k = shiftKey(startK, i), v = k >= STEP_START ? s.map[k] : undefined;
+    list.push({k:k, v:v});
+    if(k >= STEP_START) inGoal++;
+    if(v != null){ sum += v; cnt++; if(v > top) top = v; }
+  }
+  var avgEl = document.getElementById("stepAvg"), rngEl = document.getElementById("stepAvgRange");
+  if(avgEl) avgEl.textContent = cnt ? fmtN(sum/cnt) : "—";
+  if(rngEl) rngEl.textContent = shortDate(startK)+" – "+shortDate(endK)+(cnt < inGoal ? " · "+cnt+" of "+inGoal+" days logged" : "");
+  var need = s.daysLeft && s.total < STEP_STRETCH ? s.need : 0;
+  var W = Math.max(260, box.clientWidth), H = 160, L = 34, R = 6, T = 14, B = 22;
+  var pw = W-L-R, ph = H-T-B;
+  var hi = Math.max(top, need, 1000);
+  var step = hi <= 8000 ? 2000 : (hi <= 16000 ? 4000 : (hi <= 30000 ? 10000 : 20000));
+  var ymax = Math.ceil(hi * 1.12 / step) * step;
+  var Y = function(v){ return T + ph - v/ymax*ph; };
+  var slot = pw / n, bw = Math.min(24, Math.max(1, slot - 2)), y0 = T + ph;
+  var o = '<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" aria-hidden="true">';
+  for(var g = 0; g <= ymax; g += step){
+    o += '<line class="grid" x1="'+L+'" x2="'+(L+pw)+'" y1="'+Y(g)+'" y2="'+Y(g)+'"/>'+
+         '<text class="axis" x="'+(L-6)+'" y="'+(Y(g)+3)+'" text-anchor="end">'+(g ? compactN(g) : "0")+'</text>';
+  }
+  list.forEach(function(d, j){
+    if(!(d.v > 0)) return;
+    var x = L + j*slot + (slot-bw)/2, y = Y(d.v), r = Math.min(4, bw/2, y0-y);
+    o += '<path class="sb" data-i="'+j+'" d="M'+x+','+y0+' V'+(y+r)+' Q'+x+','+y+' '+(x+r)+','+y+
+         ' H'+(x+bw-r)+' Q'+(x+bw)+','+y+' '+(x+bw)+','+(y+r)+' V'+y0+' Z"/>';
+  });
+  if(need > 0){
+    var ny = Y(need);
+    o += '<line class="need" x1="'+L+'" x2="'+(L+pw)+'" y1="'+ny+'" y2="'+ny+'"/>'+
+         '<text class="lbl" x="'+(L+pw)+'" y="'+(ny-5)+'" text-anchor="end">'+fmtN(need)+' needed</text>';
+  }
+  list.forEach(function(d, j){
+    var lab = "";
+    if(stepRange === "W") lab = asDate(d.k).toLocaleDateString(undefined, {weekday:"narrow"});
+    else if(stepRange === "M" || n <= 31){ if((n-1-j) % 7 === 0) lab = shortDate(d.k); }
+    else if(d.k.slice(8) === "01") lab = asDate(d.k).toLocaleDateString(undefined, {month:"short"});
+    if(lab) o += '<text class="axis" x="'+(L + j*slot + slot/2)+'" y="'+(H-6)+'" text-anchor="middle">'+esc(lab)+'</text>';
+  });
+  box.innerHTML = o + '</svg>';
+  var marks = box.querySelectorAll(".sb");
+  hoverLayer(box, n, function(x){ return Math.floor((x-L)/slot); }, function(j){
+    marks.forEach(function(m){ m.classList.toggle("hot", Number(m.dataset.i) === j); });
+    if(j < 0) return null;
+    var d = list[j];
+    return {x: L + j*slot + slot/2, html: stepTip(asDate(d.k).toLocaleDateString(undefined, {weekday:"short", month:"short", day:"numeric"}),
+      d.v != null ? [["steps", fmtN(d.v), ""]] : [["no count", "—", "n"]])};
+  }, n-1);
+}
+function drawSteps(){
+  var cum = document.getElementById("stepCum"), bars = document.getElementById("stepBars");
+  if(!cum || !bars) return;
+  var s = stepStats();
+  drawCum(cum, s); drawBars(bars, s);
 }
 function pmFirst(map){
   var ds = Object.keys(map).sort();
@@ -1206,7 +1543,7 @@ function render(){
           if(t.weekday != null && (!effDate || asDate(effDate).getDay() !== t.weekday)) return;  // weekly: its day only
           html += segFor(t);
         });
-        html += '</div></div>';
+        html += '</div>'+(g.shift < 0 ? stepsRow(entry, stale, effDate) : '')+'</div>';
       });
     }
 
@@ -1377,7 +1714,13 @@ function render(){
           html += '<div class="pmitem"'+(t.hint?' title="'+esc(t.hint)+'"':'')+'><span class="pmlab">'+t.label+'</span>'+
                   '<div class="seg" data-ct="'+t.id+'">'+btn("no")+btn("yes")+'</div></div>';
         });
-        html += '</div>'+(calPick === todayKey ? '<div class="note">P and M for today get answered tomorrow.</div>' : '')+'</div>';
+        if(calPick >= STEP_START && calPick <= STEP_END && calPick <= yk){
+          var csv = stepMap()[calPick];
+          html += '<div class="pmitem"><label class="pmlab" for="calSteps">Steps</label>'+
+                  '<input id="calSteps" class="stepin" type="text" inputmode="numeric" autocomplete="off" placeholder="0" value="'+
+                  (csv != null ? fmtN(csv) : '')+'"></div>';
+        }
+        html += '</div>'+(calPick === todayKey ? '<div class="note">P, M and steps for today get answered tomorrow.</div>' : '')+'</div>';
       }
 
       html += '<div class="legend">'+
@@ -1389,7 +1732,7 @@ function render(){
               '<span><b class="pip ok">J</b>Yes</span>'+
               '<span><b class="gmeg">G</b>Mondays</span>'+
               '<span><b class="pdeg">8</b>Reading day</span></div>'+
-              '<div class="note">Tap a day to fill in or fix its P, M and J (G on Mondays).</div></section>';
+              '<div class="note">Tap a day to fill in or fix its P, M, J and steps (G on Mondays).</div></section>';
 
       var weekRow = function(lab, days, n, elapsed, pct){
         var dots = '';
@@ -1439,6 +1782,8 @@ function render(){
       html += '<div class="bar" style="margin-top:16px">'+
               '<i style="width:'+Math.min(100,(totalComplete/YEAR_GOAL)*100)+'%"></i></div>'+
               '<div class="sub">'+totalComplete+' of '+YEAR_GOAL+' reading days toward the year</div></section>';
+
+      html += stepsCard();
 
       if(months.length){
         html += '<section style="margin-top:20px"><div class="sechead"><span>By month</span></div>'+
@@ -1580,6 +1925,33 @@ function wire(){
     };
   });
   var cc = document.getElementById("calClose"); if(cc) cc.onclick = function(){ calPick = null; render(); };
+  var cs = document.getElementById("calSteps");
+  if(cs){
+    cs.onchange = function(){ var n = parseSteps(cs.value); setMark("st", calPick, n == null ? "" : n); render(); };
+    cs.onkeydown = function(ev){ if(ev.key === "Enter") cs.blur(); };
+  }
+  var stIn = document.getElementById("steps");
+  if(stIn){
+    stIn.oninput = function(){
+      statusMsg = "Saving…"; statusErr = false; paintStatus();
+      if(saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(function(){ writeDraft(); }, 700);
+    };
+    stIn.onblur = function(){
+      if(saveTimer){ clearTimeout(saveTimer); saveTimer = null; }
+      writeDraft();
+      var n = parseSteps(stIn.value); stIn.value = n == null ? "" : fmtN(n);
+    };
+    stIn.onkeydown = function(ev){ if(ev.key === "Enter") stIn.blur(); };
+  }
+  document.querySelectorAll("#stepRange button").forEach(function(b){
+    b.onclick = function(){
+      stepRange = b.dataset.r;
+      document.querySelectorAll("#stepRange button").forEach(function(x){ x.classList.toggle("sel", x === b); });
+      drawSteps();
+    };
+  });
+  drawSteps();
   var prev = document.getElementById("prev");
   var next = document.getElementById("next");
   if(prev) prev.onclick = function(){ flush(); viewDay = Math.max(1, viewDay-1); statusMsg=""; render(); };
@@ -1644,7 +2016,7 @@ function wire(){
 
 function writeDraft(){
   var e = state.entries[viewDay] || { day: viewDay, date: keyOf() };
-  if(staleEntry(e)){ TRACKERS.forEach(function(t){ delete e[t.id]; }); delete e.gr; delete e.date; }
+  if(staleEntry(e)){ TRACKERS.forEach(function(t){ delete e[t.id]; }); delete e.gr; delete e.st; delete e.date; }
   var any = false;
   QUESTIONS.forEach(function(q){
     var node = document.querySelector('textarea[data-q="'+q.id+'"]');
@@ -1661,6 +2033,14 @@ function writeDraft(){
     var mk = shiftKey(e.date || keyOf(), t.shift);
     if(markVal(t.id, mk)) putMark(t.id, mk, "");   // the toggle showed the calendar mark; the entry now holds it
   });
+  // steps describe the day before the entry's date, like P/M
+  var sn = document.getElementById("steps");
+  if(!sn){ if(hasVal("st", e.st)) any = true; }
+  else {
+    var sv = parseSteps(sn.value), smk = shiftKey(e.date || keyOf(), -1);
+    if(sv != null){ e.st = sv; any = true; } else delete e.st;
+    if(markVal("st", smk) !== undefined) putMark("st", smk, "");
+  }
   // goal of the day: read acknowledgement rides on the entry
   var gb = document.getElementById("goalRead");
   if(!gb){ if(e.gr) any = true; }
@@ -1689,11 +2069,13 @@ function writeDraft(){
   }
   var xb = document.getElementById("xcBox");
   if(xb && xn) xb.classList.toggle("done", !!xn.value.trim());
+  var sneed = document.getElementById("stepNeed");
+  if(sneed) sneed.textContent = stepNeedText();
 }
 
 function flush(){
   if(saveTimer){ clearTimeout(saveTimer); saveTimer = null; }
-  if(document.querySelector("textarea[data-q],textarea[data-x]")) writeDraft();
+  if(document.querySelector("textarea[data-q],textarea[data-x],input[data-s]")) writeDraft();
 }
 
 document.getElementById("importer").onchange = function(ev){
@@ -1701,6 +2083,10 @@ document.getElementById("importer").onchange = function(ev){
   ev.target.value = "";
 };
 window.addEventListener("beforeunload", flush);
+window.addEventListener("resize", function(){
+  if(stepResize) clearTimeout(stepResize);
+  stepResize = setTimeout(drawSteps, 150);
+});
 document.addEventListener("visibilitychange", function(){
   if(document.hidden){
     flush();
