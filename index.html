@@ -244,6 +244,18 @@ textarea::placeholder{color:var(--ghost)}
 .gedit{min-height:340px;font-size:14px;line-height:1.5}
 .grow{display:flex;gap:14px;align-items:center;margin-top:12px}
 .gbtn{background:var(--brass);color:var(--ink);border:none;border-radius:16px;padding:7px 16px;font-size:13px;font-weight:600;cursor:pointer}
+.gbtn:disabled{opacity:.4;cursor:default}
+.myqform{display:flex;flex-direction:column;gap:8px;margin:10px 0 6px}
+.myqform .grow{margin-top:2px}
+textarea.myq{min-height:96px;font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:15px}
+.myqby{width:100%;max-width:320px;background:var(--ink);border:1px solid var(--line);border-radius:8px;color:var(--parchment);
+ font-size:13px;padding:7px 10px}
+.myqby:focus{outline:2px solid var(--brass);outline-offset:1px;border-color:transparent}
+.myqby::placeholder{color:var(--ghost)}
+.myqlist{margin-top:14px}
+.quotes li .qact{display:flex;gap:16px;margin-top:2px}
+.quotes li.editing{opacity:.5}
+.link.danger{color:var(--rust);font-weight:600}
 .mgrid>span .tl{position:absolute;top:3px;left:4px;display:flex;gap:3px}
 .mgrid>span .gm{font-size:9px;line-height:1;font-weight:700;color:var(--ghost)}
 .mgrid>span .gm.off{text-decoration:line-through;opacity:.6}
@@ -588,6 +600,7 @@ function mergeRemote(remote){
     }
   }
   if(remote && remote.marks && mergeMarks(remote.marks)) changed = true;
+  if(remote && remote.myQuotes && mergeMyQuotes(remote.myQuotes)) changed = true;
   return changed;
 }
 
@@ -640,7 +653,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
-var APP_VER = "v25";
+var APP_VER = "v26";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -992,10 +1005,34 @@ var QUOTES = [
   {c:"god", a:"Horatio Spafford, “It Is Well with My Soul”", t:"When peace, like a river, attendeth my way,\nWhen sorrows like sea billows roll;\nWhatever my lot, Thou hast taught me to say,\nIt is well, it is well with my soul."},
   {c:"god", a:"Martin Luther, “A Mighty Fortress Is Our God”", t:"A mighty fortress is our God,\nA bulwark never failing;\nOur helper He amid the flood\nOf mortal ills prevailing."}
 ];
+// The user's own quotes live in the synced data, never in this public page:
+// state.myQuotes = [{id, t, a, made, at}], and a deleted one stays behind as {id, del:true, at}
+// so the delete syncs. Per quote, the most recent edit wins.
+function myQuotes(){
+  return (state.myQuotes||[]).filter(function(q){ return q && !q.del && (q.t||"").trim(); })
+    .sort(function(x, y){ return (x.made||"") < (y.made||"") ? -1 : (x.made||"") > (y.made||"") ? 1 : (x.id < y.id ? -1 : 1); });
+}
+function quoteBank(){
+  // built-ins first, then the user's own, in the same order on every device
+  return QUOTES.concat(myQuotes().map(function(q){ return {c:"mine", t:q.t, a:q.a||"", id:q.id}; }));
+}
+function mergeMyQuotes(src){
+  var changed = false, byId = {};
+  if(!state.myQuotes) state.myQuotes = [];
+  state.myQuotes.forEach(function(q, i){ if(q && q.id) byId[q.id] = i; });
+  (src||[]).forEach(function(q){
+    if(!q || !q.id) return;
+    var i = byId[q.id];
+    if(i == null){ byId[q.id] = state.myQuotes.length; state.myQuotes.push(q); changed = true; }
+    else if((q.at||"") > (state.myQuotes[i].at||"")){ state.myQuotes[i] = q; changed = true; }
+  });
+  return changed;
+}
 function quoteIndex(k){
-  // walks a shuffled deck of every quote, reshuffled each time through, seeded from the
-  // date so both devices agree all day; nothing repeats until the whole list has been seen
-  var n = QUOTES.length, p = parseKey(k);
+  // walks a shuffled deck of every quote (the user's own included), reshuffled each time
+  // through, seeded from the date so both devices agree all day; nothing repeats until the
+  // whole list has been seen
+  var n = quoteBank().length, p = parseKey(k);
   var day = Math.floor(Date.UTC(p.y, p.m-1, p.d) / 86400000);
   var deck = function(cyc){
     var s = (cyc * 2654435761 + 97) >>> 0, a = [];
@@ -1010,7 +1047,7 @@ function quoteIndex(k){
   if(n > 1 && d[0] === deck(cyc-1)[n-1]){ var y = d[0]; d[0] = d[1]; d[1] = y; }
   return d[pos];
 }
-function quoteCatName(c){ for(var i=0;i<QUOTE_CATS.length;i++){ if(QUOTE_CATS[i][0]===c) return QUOTE_CATS[i][1]; } return ""; }
+function quoteCatName(c){ if(c === "mine") return "My quotes"; for(var i=0;i<QUOTE_CATS.length;i++){ if(QUOTE_CATS[i][0]===c) return QUOTE_CATS[i][1]; } return ""; }
 function monthName(y,m){ return new Date(y,m-1,1).toLocaleDateString(undefined,{month:"long",year:"numeric"}); }
 function daysInMonth(y,m){ return new Date(y,m,0).getDate(); }
 
@@ -1023,6 +1060,7 @@ var LS_KEY = "bibleLog.v1";
 var state = { version:1, entries:{} };   // entries keyed by PLAN DAY number
 var page = "today";
 var goalsEdit = false;
+var myqDraft = {t:"", a:""}, myqEditId = null, myqDelArm = null;   // Quotes tab: add/edit form and two-tap delete
 var calPick = null;   // calendar day open for backfilling tracker marks (Record page)
 var viewDay = 1;
 var _now0 = parseKey(keyOf());
@@ -1038,6 +1076,7 @@ function load(){
     if(!state.entries) state.entries = {};
     if(!state.goals) state.goals = [];
     if(!state.marks) state.marks = {};
+    if(!state.myQuotes) state.myQuotes = [];
   } catch(e){
     statusMsg = "Couldn't read saved data from this browser."; statusErr = true;
   }
@@ -1558,6 +1597,11 @@ function toMarkdown(){
     state.goals.forEach(function(g,i){ lines.push((i+1)+". "+g); });
     lines.push("");
   }
+  var mq = myQuotes();
+  if(mq.length){
+    lines.push("## My quotes","");
+    mq.forEach(function(q){ lines.push("> "+q.t.replace(/\n/g, "\n> ")+(q.a ? "\n> — "+q.a : ""), ""); });
+  }
   loggedDays().forEach(function(n){
     var e = state.entries[n], p = PLAN[n-1];
     lines.push("## Day "+n+" \u2014 "+p.read+(e.date ? " \u2014 "+prettyDate(e.date) : ""), "");
@@ -1588,6 +1632,7 @@ function importFile(file){
         if(!mine || answered(theirs) > answered(mine)) state.entries[k] = theirs;
       });
       if(incoming.marks) mergeMarks(incoming.marks);
+      if(incoming.myQuotes) mergeMyQuotes(incoming.myQuotes);
       save(); render();
     } catch(e){
       statusMsg = "That file didn't look like a backup from this app."; statusErr = true; paintStatus();
@@ -1656,11 +1701,11 @@ function render(){
     }
 
     // Encouragement: one quote or verse for the day this card speaks for. Nothing to mark.
-    var qi = quoteIndex(effDate || keyOf()), qq = QUOTES[qi];
+    var qBank = quoteBank(), qi = quoteIndex(effDate || keyOf()), qq = qBank[qi];
     html += '<div class="enc" id="encBox">'+
-            '<div class="xchead"><span class="goaltag">Encouragement</span><span class="xcopt">'+esc(quoteCatName(qq.c))+' \u00b7 '+(qi+1)+' of '+QUOTES.length+'</span></div>'+
+            '<div class="xchead"><span class="goaltag">Encouragement</span><span class="xcopt">'+esc(quoteCatName(qq.c))+' \u00b7 '+(qi+1)+' of '+qBank.length+'</span></div>'+
             '<div class="enctext">'+esc(qq.t)+'</div>'+
-            '<div class="encby">\u2014 '+esc(qq.a)+'</div></div>';
+            (qq.a ? '<div class="encby">\u2014 '+esc(qq.a)+'</div>' : '')+'</div>';
 
     // Extra credit: optional, tied to the calendar day, offered on the current day and on
     // past-dated days for backfill — never on days being read ahead. An answer already
@@ -2056,7 +2101,32 @@ function render(){
   }
 
   if(page === "quotes"){
-    var todayQi = quoteIndex(keyOf());
+    var todayQi = quoteIndex(keyOf()), mineQ = myQuotes();
+    // My quotes: add, edit and delete; they join the daily shuffle and sync like goals
+    html += '<section class="card"><div class="sechead"><span>My quotes</span><span>'+(mineQ.length ? mineQ.length+' added' : '')+'</span></div>'+
+            '<div class="myqform">'+
+            '<label class="pmlab" for="myqText">'+(myqEditId ? 'Fix this quote' : 'Add a quote')+'</label>'+
+            '<textarea id="myqText" class="gedit myq" placeholder="The quote">'+esc(myqDraft.t)+'</textarea>'+
+            '<input id="myqBy" class="myqby" type="text" autocomplete="off" placeholder="Who said it" value="'+esc(myqDraft.a)+'">'+
+            '<div class="grow"><button type="button" class="gbtn" id="myqSave"'+(myqDraft.t.trim() ? '' : ' disabled')+'>'+
+            (myqEditId ? 'Save changes' : 'Save')+'</button>'+
+            (myqEditId ? '<button type="button" class="link" id="myqCancel">Cancel</button>' : '')+'</div></div>';
+    if(mineQ.length){
+      html += '<ol class="goals quotes myqlist" start="'+(QUOTES.length+1)+'">';
+      mineQ.forEach(function(q, j){
+        var bi = QUOTES.length + j, isT = bi === todayQi, armed = myqDelArm === q.id;
+        html += '<li class="'+(isT ? 'today' : '')+(myqEditId === q.id ? ' editing' : '')+'"><span class="qt">'+esc(q.t)+'</span>'+
+                ((q.a || isT) ? '<span class="qa">'+(q.a ? '— '+esc(q.a) : '')+(isT ? ' <small>today</small>' : '')+'</span>' : '')+
+                '<span class="qact"><button type="button" class="link" data-qedit="'+esc(q.id)+'">Edit</button>'+
+                '<button type="button" class="link'+(armed ? ' danger' : '')+'" data-qdel="'+esc(q.id)+'">'+
+                (armed ? 'Tap again to delete' : 'Delete')+'</button></span></li>';
+      });
+      html += '</ol>';
+    } else {
+      html += '<div class="note">Nothing added yet. Quotes you save here join the daily shuffle on the Today tab and sync to your other device.</div>';
+    }
+    html += '</section>';
+
     html += '<section class="card"><div class="sechead"><span>Encouragement</span><span>'+QUOTES.length+' quotes &amp; verses</span></div>';
     QUOTE_CATS.forEach(function(cat){
       var start = -1, items = "";
@@ -2068,7 +2138,7 @@ function render(){
       });
       html += '<div class="goaltag qcat">'+esc(cat[1])+'</div><ol class="goals quotes" start="'+start+'">'+items+'</ol>';
     });
-    html += '<div class="note">One of these is picked for each day and shown under the reading questions on the Today tab. '+
+    html += '<div class="note">One of these, or one of yours, is picked for each day and shown under the reading questions on the Today tab. '+
             'Every one comes around before any repeats. Scripture is quoted from the ESV.</div></section>';
   }
 
@@ -2079,7 +2149,7 @@ function render(){
 function wire(){
   document.querySelectorAll("nav button").forEach(function(b){
     b.onclick = function(){
-      page = b.dataset.page; statusMsg=""; calPick = null;
+      page = b.dataset.page; statusMsg=""; calPick = null; myqDelArm = null;
       var n0 = parseKey(keyOf()); viewY = n0.y; viewM = n0.m;
       render();
     };
@@ -2091,6 +2161,47 @@ function wire(){
     document.getElementById("goalBox").classList.toggle("read", on);
     writeDraft();
   };
+  // My quotes: the draft is kept in memory so a sync re-render never loses typing
+  var mqt = document.getElementById("myqText"), mqb = document.getElementById("myqBy"), mqs = document.getElementById("myqSave");
+  if(mqt && mqb && mqs){
+    var mqInput = function(){ myqDraft.t = mqt.value; myqDraft.a = mqb.value; mqs.disabled = !mqt.value.trim(); };
+    mqt.oninput = mqInput; mqb.oninput = mqInput;
+    mqb.onkeydown = function(ev){ if(ev.key === "Enter"){ ev.preventDefault(); mqs.click(); } };
+    mqs.onclick = function(){
+      var t = mqt.value.trim(), a = mqb.value.trim(), now = new Date().toISOString();
+      if(!t) return;
+      if(!state.myQuotes) state.myQuotes = [];
+      var q = myqEditId ? state.myQuotes.filter(function(x){ return x && x.id === myqEditId && !x.del; })[0] : null;
+      if(q){ q.t = t; q.a = a; q.at = now; }
+      else state.myQuotes.push({id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), t:t, a:a, made:now, at:now});
+      myqDraft = {t:"", a:""}; myqEditId = null; myqDelArm = null;
+      save(); render();
+    };
+  }
+  var mqc = document.getElementById("myqCancel");
+  if(mqc) mqc.onclick = function(){ myqEditId = null; myqDraft = {t:"", a:""}; render(); };
+  document.querySelectorAll("[data-qedit]").forEach(function(b){
+    b.onclick = function(){
+      var q = myQuotes().filter(function(x){ return x.id === b.dataset.qedit; })[0];
+      if(!q) return;
+      myqEditId = q.id; myqDraft = {t:q.t, a:q.a || ""}; myqDelArm = null;
+      render();
+      var box = document.getElementById("myqText");
+      if(box){ box.focus(); if(box.scrollIntoView) box.scrollIntoView({block:"center"}); }
+    };
+  });
+  document.querySelectorAll("[data-qdel]").forEach(function(b){
+    b.onclick = function(){
+      var id = b.dataset.qdel;
+      if(myqDelArm !== id){ myqDelArm = id; render(); return; }   // first tap arms, second tap deletes
+      (state.myQuotes || []).forEach(function(x){
+        if(x && x.id === id){ x.del = true; x.t = ""; x.a = ""; x.at = new Date().toISOString(); }
+      });
+      if(myqEditId === id){ myqEditId = null; myqDraft = {t:"", a:""}; }
+      myqDelArm = null;
+      save(); render();
+    };
+  });
   var ge = document.getElementById("goalsEdit"); if(ge) ge.onclick = function(){ goalsEdit = true; render(); };
   var gc = document.getElementById("goalsCancel"); if(gc) gc.onclick = function(){ goalsEdit = false; render(); };
   var gs = document.getElementById("goalsSave");
