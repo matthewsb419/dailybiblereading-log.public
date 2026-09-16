@@ -681,7 +681,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
-var APP_VER = "v30";
+var APP_VER = "v31";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -1415,6 +1415,11 @@ function stepsCard(){
        }).join("")+'</div></div>'+
        '<div class="schart" id="stepBars" role="img" aria-label="Steps per day"></div>';
 
+  h += '<div class="savg" style="margin-top:20px"><div><div class="eyebrow">Needed per day</div>'+
+       '<div class="sub">recalculated after every day’s count, for the days still left</div></div></div>'+
+       '<div class="schart" id="stepNeed" role="img" aria-label="Steps needed per day for the rest of the goal, over time"></div>'+
+       '<div class="skeys"><span><i></i>For 1M</span><span><i class="s"></i>For 2M</span></div>';
+
   var reach = s.total >= STEP_STRETCH ? "Done" : (s.hitDate ? (s.hitDate <= STEP_END ? shortDate(s.hitDate) : "After Feb 14") : "—");
   h += '<div class="stiles">'+
     tile("Needed per day", s.daysLeft && s.total < STEP_STRETCH ? fmtN(s.need) : "—", stretch ? "for the stretch goal" : "for the goal")+
@@ -1571,11 +1576,72 @@ function drawBars(box, s){
       d.v != null ? [["steps", fmtN(d.v), ""]] : [["no count", "—", "n"]])};
   }, n-1);
 }
+function needSeries(s){
+  // What every remaining day needs, recomputed after each day's count lands: a day above the
+  // line pulls the rest of the run down, a blank day pushes it up.
+  var out = [], run = 0, span0 = countDays(STEP_START, STEP_END);
+  out.push({k:STEP_START, start:true, left:span0, v:null,
+            g: STEP_GOAL/span0, s: STEP_STRETCH/span0});
+  s.days.forEach(function(d){
+    run += d.v || 0;
+    var after = shiftKey(d.k, 1), left = after <= STEP_END ? countDays(after, STEP_END) : 0;
+    out.push({k:d.k, left:left, v:d.v, cum:run,
+              g: left ? Math.max(0, (STEP_GOAL - run)/left) : 0,
+              s: left ? Math.max(0, (STEP_STRETCH - run)/left) : 0});
+  });
+  return out;
+}
+function drawNeed(box, s){
+  var pts = needSeries(s), n = pts.length;
+  var W = Math.max(260, box.clientWidth), H = 170, L = 40, R = 40, T = 14, B = 22;
+  var pw = W-L-R, ph = H-T-B;
+  var vals = [];
+  pts.forEach(function(p){ vals.push(p.g, p.s); });
+  var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+  if(hi - lo < hi * 0.08){ lo = hi * 0.9; }            // an almost flat run still needs room to read
+  var ymin = Math.max(0, lo * 0.92), ymax = hi * 1.06 || 1;
+  var X = function(i){ return L + (n > 1 ? i/(n-1) : 0) * pw; };
+  var Y = function(v){ return T + ph - (v - ymin)/(ymax - ymin) * ph; };
+  var o = '<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" aria-hidden="true">';
+  for(var q = 0; q <= 4; q++){
+    var gv = ymin + (ymax-ymin)*q/4, gy = Y(gv);
+    o += '<line class="grid" x1="'+L+'" x2="'+(L+pw)+'" y1="'+gy+'" y2="'+gy+'"/>'+
+         '<text class="axis" x="'+(L-6)+'" y="'+(gy+3)+'" text-anchor="end">'+compactN(gv)+'</text>';
+  }
+  for(var i = 1; i < n; i++){
+    if(pts[i].k.slice(8) === "01") o += '<text class="axis" x="'+X(i)+'" y="'+(H-6)+'" text-anchor="middle">'+
+      esc(asDate(pts[i].k).toLocaleDateString(undefined, {month:"short"}))+'</text>';
+  }
+  var path = function(key, cls){
+    var d = pts.map(function(p, j){ return X(j).toFixed(1)+","+Y(p[key]).toFixed(1); });
+    return '<path class="'+cls+'" fill="none" d="M'+d.join(" L")+'"/>';
+  };
+  o += path("s", "pace2") + path("g", "act");
+  var li = n-1, last = pts[li];
+  o += '<text class="lbl" x="'+(L+pw+6)+'" y="'+(Y(last.s)+3)+'">2M</text>'+
+       '<text class="lbl" x="'+(L+pw+6)+'" y="'+(Y(last.g)+3)+'">1M</text>'+
+       '<circle class="dot" cx="'+X(li)+'" cy="'+Y(last.g)+'" r="4"/>'+
+       '<text class="lbl strong" x="'+X(li)+'" y="'+(Y(last.g)-10)+'" text-anchor="end">'+fmtN(last.g)+'</text>'+
+       '<line class="xh" y1="'+T+'" y2="'+(T+ph)+'" x1="0" x2="0" visibility="hidden"/></svg>';
+  box.innerHTML = o;
+  var xh = box.querySelector(".xh");
+  hoverLayer(box, n, function(x){ return Math.round((x-L)/pw*(n-1)); }, function(j){
+    if(j < 0){ xh.setAttribute("visibility", "hidden"); return null; }
+    var p = pts[j], x = X(j);
+    xh.setAttribute("x1", x); xh.setAttribute("x2", x); xh.setAttribute("visibility", "visible");
+    var rows = [];
+    if(!p.start) rows.push(["steps that day", p.v != null ? fmtN(p.v) : "—", p.v != null ? "" : "n"]);
+    rows.push(["then needed for 1M", fmtN(p.g), ""], ["for 2M", fmtN(p.s), "s"]);
+    return {x:x, html: stepTip(p.start ? "Before the first day" : shortDate(p.k), rows)};
+  }, n-1);
+}
 function drawSteps(){
   var cum = document.getElementById("stepCum"), bars = document.getElementById("stepBars");
   if(!cum || !bars) return;
   var s = stepStats();
   drawCum(cum, s); drawBars(bars, s);
+  var need = document.getElementById("stepNeed");
+  if(need) drawNeed(need, s);
 }
 function pmFirst(map){
   var ds = Object.keys(map).sort();
@@ -1677,6 +1743,27 @@ function kegGoalOn(prog, k){
   for(var i=ws.length-1; i>=0; i--){ if(k >= ws[i].start) return kegLevelPlan(ws[i].lvl).sets; }
   return prog.plan.sets;
 }
+function kegDayPct(n, g){
+  // all of that day's sessions is full marks; one short of it is a pass, not a miss
+  if(g <= 0) return 100;
+  if(n >= g) return 100;
+  if(g > 1 && n >= g - 1) return 80;
+  return (n / g) * 100;
+}
+function kegGrade(days){
+  // A+ is reserved for every day at the full count, so one 2-of-3 day caps the week at A
+  if(!days.length) return null;
+  var sum = 0, full = 0, pass = 0, miss = 0;
+  days.forEach(function(d){
+    sum += kegDayPct(d.n, d.g);
+    if(d.n >= d.g) full++;
+    else if(d.g > 1 && d.n >= d.g - 1) pass++;
+    else miss++;
+  });
+  var pct = sum / days.length, allFull = full === days.length, g = allFull ? "A+" : gradeFor(pct);
+  if(!allFull && g === "A+") g = "A";
+  return {pct:pct, grade:g, full:full, pass:pass, miss:miss, n:days.length};
+}
 function kegPlan(){
   var p = kegProgram().plan;
   var out = [{k:"ready", label:"Get ready", sub:"Breathe normally — don’t clench your stomach, thighs or buttocks", secs:5}];
@@ -1712,13 +1799,18 @@ function kegMap(){
 function parseKeg(s){ var d = String(s||"").replace(/[^\d]/g, ""); return d ? Math.min(Number(d), 20) : null; }
 function kegStats(){
   var m = kegMap(), today = keyOf(), end = asDate(today), prog = kegProgram();
-  var total = 0, atGoal = 0, anyDay = 0, days = 0;
+  var total = 0, atGoal = 0, anyDay = 0, days = 0, all = [];
   for(var d = asDate(KEG_START); d <= end; d.setDate(d.getDate()+1)){
-    var k = keyOf(d), n = m[k] || 0;
+    var k = keyOf(d), n = m[k] || 0, g0 = kegGoalOn(prog, k);
     days++; total += n;
-    if(n >= kegGoalOn(prog, k)) atGoal++;
+    all.push({k:k, n:n, g:g0});
+    if(n >= g0) atGoal++;
     if(n > 0) anyDay++;
   }
+  // today is still open unless it already hit the full count, so it can't drag a grade down
+  var closed = all.slice();
+  if(closed.length && closed[closed.length-1].k === today && closed[closed.length-1].n < closed[closed.length-1].g) closed.pop();
+  var wk7 = closed.slice(-7);
   // a run of days at that day's goal; today only counts once it is there, so a day in progress doesn't break it
   var streak = 0, w = asDate(today);
   if((m[today]||0) < kegGoalOn(prog, today)) w.setDate(w.getDate()-1);
@@ -1730,7 +1822,8 @@ function kegStats(){
     if(kk >= KEG_START) last7.push({k:kk, n:m[kk] || 0, g:kegGoalOn(prog, kk)});
   }
   return {prog:prog, plan:prog.plan, goal:prog.plan.sets, today:m[today] || 0, total:total, days:days,
-          atGoal:atGoal, anyDay:anyDay, streak:streak, last7:last7, avg: days ? total/days : 0};
+          atGoal:atGoal, anyDay:anyDay, streak:streak, last7:last7, avg: days ? total/days : 0,
+          all:all, closed:closed, wk7:wk7, wkGrade:kegGrade(wk7), allGrade:kegGrade(closed)};
 }
 function kegAdd(n){
   var dk = keyOf();
@@ -1859,9 +1952,15 @@ function kegCard(){
          '<span class="apct' + (wk.done >= wk.target ? " on" : "") + '">' + wk.done + '/' + wk.target + '</span></div>' +
          '<div class="weekrow"><span class="tlab">Last 7</span><div class="dots">' + dots + '</div>' +
          '<div class="wnum">' + s.last7.filter(function(d){ return d.n >= d.g; }).length + '/' + s.last7.length + '</div></div>' +
+         (s.wkGrade ? '<div class="arow"><span class="tlab">Grade</span>' +
+           '<span class="det">last ' + s.wkGrade.n + ' day' + (s.wkGrade.n === 1 ? '' : 's') + ' · ' +
+           s.wkGrade.full + ' full, ' + s.wkGrade.pass + ' pass, ' + s.wkGrade.miss + ' missed</span>' +
+           '<span class="apct' + (s.wkGrade.pct >= MONTH_TARGET ? " on" : "") + '">' + s.wkGrade.pct.toFixed(0) + '%' +
+           '<b>' + s.wkGrade.grade + '</b></span></div>' : '') +
          '<div class="arow"><span class="tlab">At goal</span>' +
          '<span class="det">' + s.atGoal + ' of ' + s.days + ' days · since ' + esc(shortDate(KEG_START)) + '</span>' +
-         '<span class="apct' + (pct >= MONTH_TARGET ? " on" : "") + '">' + pct.toFixed(0) + '%</span></div>' +
+         '<span class="apct' + (pct >= MONTH_TARGET ? " on" : "") + '">' + pct.toFixed(0) + '%' +
+         (s.allGrade ? '<b>' + s.allGrade.grade + '</b>' : '') + '</span></div>' +
          '<div class="stiles">' +
          tile("Today", s.today + " of " + s.goal, s.today >= s.goal ? "goal met" : "sessions done") +
          tile("Streak", s.streak + (s.streak === 1 ? " day" : " days"), "at the day’s goal") +
@@ -1873,6 +1972,7 @@ function kegCard(){
          (nx.name === "Deload" ? "next week is a deload, lighter on purpose" :
           "next week is hold " + nx.hold + "s × " + nx.reps + ", " + nx.sets + " a day") +
          ', once you finish at least half of this week’s ' + wk.target + ' sessions. ' +
+         'A+ means every day hit all ' + p.sets + '; one short of the day’s count still passes at 80%, and today stays open until it is done. ' +
          'Work from lying down to sitting to standing. Breathe freely and keep your stomach, thighs and buttocks loose. ' +
          'Most men notice a change after six to eight weeks; stop if it hurts, and don’t practise by stopping your urine midstream.</div>' +
          '<div class="grow"><button type="button" class="link" id="planOpen">The year ahead →</button></div></section>';
