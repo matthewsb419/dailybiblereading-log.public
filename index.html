@@ -27,9 +27,9 @@ h1{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:30px
 .count{text-align:right;line-height:1.1;flex-shrink:0}
 .count b{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:28px;color:var(--brass);display:block;font-weight:400}
 .count span{font-size:11px;color:var(--muted)}
-nav{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+nav{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:16px;border-bottom:1px solid var(--line)}
 nav button{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);
- font-size:13px;letter-spacing:.06em;text-transform:uppercase;padding:8px 12px;cursor:pointer;margin-bottom:-1px}
+ font-size:13px;letter-spacing:.05em;text-transform:uppercase;padding:8px 9px;cursor:pointer;margin-bottom:-1px}
 nav button.on{color:var(--brass);border-bottom-color:var(--brass)}
 .card{background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px}
 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
@@ -287,6 +287,21 @@ textarea.myq{min-height:96px;font-family:"Iowan Old Style","Charter",Palatino,Ge
 .kegdots i{width:22px;height:22px;border-radius:5px;border:1px solid var(--line);display:block}
 .kegdots i.on{background:var(--brass);border-color:var(--brass)}
 .kegin{width:72px}
+.prow{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:baseline;
+ border-bottom:1px solid var(--line);padding:9px 2px}
+.prow:last-child{border-bottom:none}
+.prow .pn{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.prow .pmain{font-size:13px;color:var(--parchment);line-height:1.35}
+.prow .pwhen{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.prow .pstat{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.prow.now{background:var(--track);border-radius:8px;padding-left:8px;padding-right:8px}
+.prow.now .pn,.prow.now .pmain{color:var(--brass)}
+.prow.deload .pmain{color:var(--muted)}
+.prow.ahead .pmain{opacity:.8}
+.prow .pstat.ok{color:var(--brass)}
+.prow .pstat.short{color:var(--rust)}
+.ptag{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-left:6px}
+.prow.deload .ptag{color:var(--rust)}
 .stepneed{font-size:12px;color:var(--muted);opacity:.8}
 .shero{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:8px 0 2px}
 .shero b{font-size:34px;font-weight:600;color:var(--parchment);letter-spacing:-.01em;line-height:1.1}
@@ -666,7 +681,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
-var APP_VER = "v28";
+var APP_VER = "v29";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -1937,7 +1952,8 @@ function render(){
   html += '<nav><button data-page="today" class="'+(page==="today"?"on":"")+'">Today</button>'+
           '<button data-page="record" class="'+(page==="record"?"on":"")+'">Record</button>'+
           '<button data-page="goals" class="'+(page==="goals"?"on":"")+'">Goals</button>'+
-          '<button data-page="quotes" class="'+(page==="quotes"?"on":"")+'">Quotes</button></nav>';
+          '<button data-page="quotes" class="'+(page==="quotes"?"on":"")+'">Quotes</button>'+
+          '<button data-page="plan" class="'+(page==="plan"?"on":"")+'">Plan</button></nav>';
 
   if(page === "today"){
     var isNext = viewDay === nextUnloggedDay();
@@ -2422,6 +2438,54 @@ function render(){
     });
     html += '<div class="note">One of these, or one of yours, is picked for each day and shown under the reading questions on the Today tab. '+
             'Every one comes around before any repeats. Scripture is quoted from the ESV.</div></section>';
+  }
+
+  if(page === "plan"){
+    // A year of the pelvic floor program. Weeks already lived show what actually happened;
+    // the rest is where the program goes if each week keeps clearing half its sessions.
+    var prog = kegProgram(), ws = prog.weeks, cur = ws.length - 1, WEEKS = 52, thisYear = parseKey(keyOf()).y;
+    // a year of weeks runs into the next calendar year, so date labels carry it when it differs
+    var planDate = function(k){ var p = parseKey(k); return shortDate(k) + (p.y !== thisYear ? " " + p.y : ""); };
+    // within a row the year rides on the end date only: "Dec 30 – Jan 5 2027", "Jan 6 – Jan 12 2027"
+    var planRange = function(a, b){
+      var ya = parseKey(a).y, yb = parseKey(b).y;
+      return shortDate(a) + (ya !== thisYear && ya !== yb ? " " + ya : "") + " – " + planDate(b);
+    };
+    var lvlFor = function(i){ return i < ws.length ? ws[i].lvl : prog.level + (i - cur); };
+    var tenAt = null;
+    for(var i0 = cur; i0 < WEEKS && tenAt === null; i0++){ if(kegLevelPlan(lvlFor(i0)).hold >= 10) tenAt = i0; }
+
+    var p0 = prog.plan;
+    html += '<section class="card"><div class="sechead"><span>Pelvic floor plan</span><span>week '+ws.length+' of '+WEEKS+'</span></div>'+
+            '<div class="kegsub">This week: '+esc(p0.name)+' · hold '+p0.hold+'s × '+p0.reps+', then '+p0.flicks+
+            ' quick flicks, '+p0.sets+' a day · '+prog.week.done+' of '+prog.week.target+' done</div>'+
+            '<div class="note">Three building weeks, then a lighter one. A week moves you up only if you finish at least '+
+            'half its sessions, so the dates below shift out if a week goes short — nothing here is a deadline.'+
+            (tenAt !== null ? ' Ten-second holds arrive in week '+(tenAt+1)+', the week of '+esc(planDate(shiftKey(KEG_START, tenAt*7)))+'.' : '')+
+            '</div></section>';
+
+    var block = -1;
+    for(var i = 0; i < WEEKS; i++){
+      var b = Math.floor(i/4);
+      if(b !== block){
+        block = b;
+        html += '<section class="card" style="margin-top:14px"><div class="sechead"><span>Block '+(b+1)+'</span>'+
+                '<span>weeks '+(b*4+1)+'–'+Math.min(WEEKS, b*4+4)+'</span></div>';
+      }
+      var pl = kegLevelPlan(lvlFor(i)), sK = shiftKey(KEG_START, i*7), eK = shiftKey(sK, 6);
+      var cls = i < cur ? (ws[i].done >= ws[i].target/2 ? "past" : "past short") : (i === cur ? "now" : "ahead");
+      if(pl.name === "Deload") cls += " deload";
+      var stat = '<span class="pstat"></span>';
+      if(i < cur) stat = '<span class="pstat '+(ws[i].done >= ws[i].target/2 ? "ok" : "short")+'">'+ws[i].done+'/'+ws[i].target+'</span>';
+      else if(i === cur) stat = '<span class="pstat ok">'+ws[i].done+'/'+ws[i].target+'</span>';
+      html += '<div class="prow '+cls+'"><span class="pn">'+(i+1)+'</span>'+
+              '<span class="pmain">hold '+pl.hold+'s × '+pl.reps+' · '+pl.flicks+' flicks · '+pl.sets+' a day'+
+              (pl.name === "Build" ? '' : '<span class="ptag">'+esc(pl.name)+'</span>')+
+              '<span class="pwhen">'+esc(planRange(sK, eK))+
+              (i === cur ? ' · this week' : '')+'</span></span>'+
+              stat+'</div>';
+      if(b !== Math.floor((i+1)/4) || i === WEEKS-1) html += '</section>';
+    }
   }
 
   app.innerHTML = html;
