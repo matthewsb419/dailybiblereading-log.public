@@ -27,9 +27,9 @@ h1{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:30px
 .count{text-align:right;line-height:1.1;flex-shrink:0}
 .count b{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:28px;color:var(--brass);display:block;font-weight:400}
 .count span{font-size:11px;color:var(--muted)}
-nav{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+nav{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--line)}
 nav button{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);
- font-size:13px;letter-spacing:.05em;text-transform:uppercase;padding:8px 9px;cursor:pointer;margin-bottom:-1px}
+ font-size:13px;letter-spacing:.06em;text-transform:uppercase;padding:8px 12px;cursor:pointer;margin-bottom:-1px}
 nav button.on{color:var(--brass);border-bottom-color:var(--brass)}
 .card{background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px}
 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
@@ -681,7 +681,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
-var APP_VER = "v29";
+var APP_VER = "v30";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -1874,7 +1874,8 @@ function kegCard(){
           "next week is hold " + nx.hold + "s × " + nx.reps + ", " + nx.sets + " a day") +
          ', once you finish at least half of this week’s ' + wk.target + ' sessions. ' +
          'Work from lying down to sitting to standing. Breathe freely and keep your stomach, thighs and buttocks loose. ' +
-         'Most men notice a change after six to eight weeks; stop if it hurts, and don’t practise by stopping your urine midstream.</div></section>';
+         'Most men notice a change after six to eight weeks; stop if it hurts, and don’t practise by stopping your urine midstream.</div>' +
+         '<div class="grow"><button type="button" class="link" id="planOpen">The year ahead →</button></div></section>';
 }
 
 /* ---------- export / import ---------- */
@@ -1950,10 +1951,9 @@ function render(){
           '<div class="count"><b>'+viewDay+'</b><span>of '+PLAN.length+'</span></div></div>';
 
   html += '<nav><button data-page="today" class="'+(page==="today"?"on":"")+'">Today</button>'+
-          '<button data-page="record" class="'+(page==="record"?"on":"")+'">Record</button>'+
+          '<button data-page="record" class="'+(page==="record"||page==="plan"?"on":"")+'">Record</button>'+   // the year plan hangs off Record
           '<button data-page="goals" class="'+(page==="goals"?"on":"")+'">Goals</button>'+
-          '<button data-page="quotes" class="'+(page==="quotes"?"on":"")+'">Quotes</button>'+
-          '<button data-page="plan" class="'+(page==="plan"?"on":"")+'">Plan</button></nav>';
+          '<button data-page="quotes" class="'+(page==="quotes"?"on":"")+'">Quotes</button></nav>';
 
   if(page === "today"){
     var isNext = viewDay === nextUnloggedDay();
@@ -2457,6 +2457,7 @@ function render(){
 
     var p0 = prog.plan;
     html += '<section class="card"><div class="sechead"><span>Pelvic floor plan</span><span>week '+ws.length+' of '+WEEKS+'</span></div>'+
+            '<div class="grow" style="margin:0 0 10px"><button type="button" class="link" id="planBack">← Back to Record</button></div>'+
             '<div class="kegsub">This week: '+esc(p0.name)+' · hold '+p0.hold+'s × '+p0.reps+', then '+p0.flicks+
             ' quick flicks, '+p0.sets+' a day · '+prog.week.done+' of '+prog.week.target+' done</div>'+
             '<div class="note">Three building weeks, then a lighter one. A week moves you up only if you finish at least '+
@@ -2584,6 +2585,10 @@ function wire(){
     ck.onchange = function(){ var n = parseKeg(ck.value); setMark("kg", calPick, n == null ? "" : n); render(); };
     ck.onkeydown = function(ev){ if(ev.key === "Enter") ck.blur(); };
   }
+  var po = document.getElementById("planOpen");
+  if(po) po.onclick = function(){ page = "plan"; statusMsg = ""; render(); window.scrollTo(0, 0); };
+  var pb = document.getElementById("planBack");
+  if(pb) pb.onclick = function(){ page = "record"; statusMsg = ""; render(); window.scrollTo(0, 0); };
   var kst = document.getElementById("kegStart"); if(kst) kst.onclick = function(){ kegStart(); };
   var kpa = document.getElementById("kegPause"); if(kpa) kpa.onclick = function(){ kegPause(); };
   var kqu = document.getElementById("kegQuit"); if(kqu) kqu.onclick = function(){ kegQuit(); };
