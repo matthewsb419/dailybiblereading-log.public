@@ -286,8 +286,6 @@ textarea.myq{min-height:96px;font-family:"Iowan Old Style","Charter",Palatino,Ge
 .kegdots{display:flex;gap:6px;margin-top:10px}
 .kegdots i{width:22px;height:22px;border-radius:5px;border:1px solid var(--line);display:block}
 .kegdots i.on{background:var(--brass);border-color:var(--brass)}
-.keghold{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}
-.keghold .seg button{padding:5px 9px}
 .kegin{width:72px}
 .stepneed{font-size:12px;color:var(--muted);opacity:.8}
 .shero{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:8px 0 2px}
@@ -668,7 +666,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
-var APP_VER = "v27";
+var APP_VER = "v28";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -1610,23 +1608,71 @@ function tWeek(map, first, nowKey, wd){
 // relax for the same count, starting at 5 seconds and building toward 10 over weeks), then 10
 // quick flicks of about a second, at least 3 sessions a day, lying, sitting or standing.
 var KEG_START = "2026-09-16";
-var KEG_GOAL = 3;                       // sessions a day
-var KEG_REPS = 10, KEG_FLICKS = 10, KEG_BREAK = 10, KEG_FLICK_HOLD = 1, KEG_FLICK_REST = 2;
-var KEG_HOLDS = [3, 5, 8, 10];          // seconds per squeeze; build up week by week
+var KEG_BREAK = 10, KEG_FLICK_HOLD = 1, KEG_FLICK_REST = 2;
 var KEG_WHERE = ["lying down", "sitting", "standing"];
 var kegRun = null, kegTimer = null, kegLock = null;
 
-function kegHold(){ var h = Number(state.kegHold || 5); return KEG_HOLDS.indexOf(h) >= 0 ? h : 5; }
+// Progressive overload with a deload every fourth week: three weeks of building, then a lighter
+// week, and the block after starts above where the last one did. You only move up a level by
+// doing the work — see kegProgram() — so a missed week never jumps you to 9-second holds.
+var KEG_LEVELS = [
+  null,
+  {hold:5,  reps:10, flicks:10, sets:3, name:"Build"},
+  {hold:6,  reps:10, flicks:10, sets:3, name:"Build"},
+  {hold:7,  reps:10, flicks:10, sets:3, name:"Build"},
+  {hold:5,  reps:8,  flicks:8,  sets:2, name:"Deload"},
+  {hold:7,  reps:10, flicks:12, sets:3, name:"Build"},
+  {hold:8,  reps:10, flicks:12, sets:3, name:"Build"},
+  {hold:9,  reps:10, flicks:12, sets:3, name:"Build"},
+  {hold:6,  reps:8,  flicks:8,  sets:2, name:"Deload"},
+  {hold:9,  reps:12, flicks:15, sets:3, name:"Build"},
+  {hold:10, reps:12, flicks:15, sets:3, name:"Build"},
+  {hold:10, reps:12, flicks:15, sets:3, name:"Peak"},
+  {hold:7,  reps:8,  flicks:10, sets:2, name:"Deload"}
+];
+function kegLevelPlan(l){
+  if(l < 1) l = 1;
+  if(l < KEG_LEVELS.length) return KEG_LEVELS[l];
+  // past the twelfth week it holds at the top, still deloading every fourth week
+  return ((l - KEG_LEVELS.length) % 4) === 3 ?
+    {hold:7, reps:8, flicks:10, sets:2, name:"Deload"} :
+    {hold:10, reps:12, flicks:15, sets:3, name:"Maintain"};
+}
+function kegProgram(){
+  // one level per week since the start, but a week only counts if at least half its sessions
+  // were done — so the routine advances at the pace you actually keep
+  var m = kegMap(), today = keyOf(), lvl = 1, weeks = [], d = asDate(KEG_START), end = asDate(today);
+  while(d <= end){
+    var sets = kegLevelPlan(lvl).sets, done = 0, target = 0, closed = true, dd = new Date(d);
+    for(var i=0; i<7; i++){
+      var k = keyOf(dd);
+      if(k > today) closed = false;
+      else { done += m[k] || 0; target += sets; }
+      dd.setDate(dd.getDate()+1);
+    }
+    weeks.push({start:keyOf(d), lvl:lvl, done:done, target:target, closed:closed});
+    if(closed && target && done >= target/2) lvl++;
+    d.setDate(d.getDate()+7);
+  }
+  return {level:lvl, weeks:weeks, plan:kegLevelPlan(lvl), week:weeks[weeks.length-1], next:kegLevelPlan(lvl+1)};
+}
+function kegGoalOn(prog, k){
+  // the daily session goal for the week that day fell in
+  var ws = prog.weeks;
+  for(var i=ws.length-1; i>=0; i--){ if(k >= ws[i].start) return kegLevelPlan(ws[i].lvl).sets; }
+  return prog.plan.sets;
+}
 function kegPlan(){
-  var h = kegHold(), out = [{k:"ready", label:"Get ready", sub:"Breathe normally — don’t clench your stomach, thighs or buttocks", secs:5}];
-  for(var i=1; i<=KEG_REPS; i++){
-    out.push({k:"hold", label:"Squeeze", sub:"Lift and hold · " + i + " of " + KEG_REPS, secs:h});
-    out.push({k:"rest", label:"Relax", sub:"Let go completely · " + i + " of " + KEG_REPS, secs:h});
+  var p = kegProgram().plan;
+  var out = [{k:"ready", label:"Get ready", sub:"Breathe normally — don’t clench your stomach, thighs or buttocks", secs:5}];
+  for(var i=1; i<=p.reps; i++){
+    out.push({k:"hold", label:"Squeeze", sub:"Lift and hold · " + i + " of " + p.reps, secs:p.hold});
+    out.push({k:"rest", label:"Relax", sub:"Let go completely · " + i + " of " + p.reps, secs:p.hold});
   }
   out.push({k:"break", label:"Break", sub:"Quick flicks next", secs:KEG_BREAK});
-  for(var j=1; j<=KEG_FLICKS; j++){
-    out.push({k:"flick", label:"Quick squeeze", sub:"Flick " + j + " of " + KEG_FLICKS, secs:KEG_FLICK_HOLD});
-    out.push({k:"frest", label:"Let go", sub:"Flick " + j + " of " + KEG_FLICKS, secs:KEG_FLICK_REST});
+  for(var j=1; j<=p.flicks; j++){
+    out.push({k:"flick", label:"Quick squeeze", sub:"Flick " + j + " of " + p.flicks, secs:KEG_FLICK_HOLD});
+    out.push({k:"frest", label:"Let go", sub:"Flick " + j + " of " + p.flicks, secs:KEG_FLICK_REST});
   }
   return out;
 }
@@ -1650,25 +1696,26 @@ function kegMap(){
 }
 function parseKeg(s){ var d = String(s||"").replace(/[^\d]/g, ""); return d ? Math.min(Number(d), 20) : null; }
 function kegStats(){
-  var m = kegMap(), today = keyOf(), end = asDate(today), total = 0, atGoal = 0, anyDay = 0, days = 0;
+  var m = kegMap(), today = keyOf(), end = asDate(today), prog = kegProgram();
+  var total = 0, atGoal = 0, anyDay = 0, days = 0;
   for(var d = asDate(KEG_START); d <= end; d.setDate(d.getDate()+1)){
-    var n = m[keyOf(d)] || 0;
+    var k = keyOf(d), n = m[k] || 0;
     days++; total += n;
-    if(n >= KEG_GOAL) atGoal++;
+    if(n >= kegGoalOn(prog, k)) atGoal++;
     if(n > 0) anyDay++;
   }
-  // a run of days at the full goal; today only counts once it is there, so a day in progress doesn't break it
+  // a run of days at that day's goal; today only counts once it is there, so a day in progress doesn't break it
   var streak = 0, w = asDate(today);
-  if((m[today]||0) < KEG_GOAL) w.setDate(w.getDate()-1);
-  while(keyOf(w) >= KEG_START && (m[keyOf(w)]||0) >= KEG_GOAL){ streak++; w.setDate(w.getDate()-1); }
+  if((m[today]||0) < kegGoalOn(prog, today)) w.setDate(w.getDate()-1);
+  while(keyOf(w) >= KEG_START && (m[keyOf(w)]||0) >= kegGoalOn(prog, keyOf(w))){ streak++; w.setDate(w.getDate()-1); }
   var last7 = [];
   for(var i=6; i>=0; i--){
     var e2 = asDate(today); e2.setDate(e2.getDate()-i);
     var kk = keyOf(e2);
-    if(kk >= KEG_START) last7.push({k:kk, n:m[kk] || 0});
+    if(kk >= KEG_START) last7.push({k:kk, n:m[kk] || 0, g:kegGoalOn(prog, kk)});
   }
-  return {today:m[today] || 0, total:total, days:days, atGoal:atGoal, anyDay:anyDay,
-          streak:streak, last7:last7, avg: days ? total/days : 0};
+  return {prog:prog, plan:prog.plan, goal:prog.plan.sets, today:m[today] || 0, total:total, days:days,
+          atGoal:atGoal, anyDay:anyDay, streak:streak, last7:last7, avg: days ? total/days : 0};
 }
 function kegAdd(n){
   var dk = keyOf();
@@ -1747,7 +1794,7 @@ function kegPaint(){
 function kegRow(isCurrent){
   // the timer is for right now, so it only shows on the current day; past days fill in from the calendar
   if(!isCurrent || keyOf() < KEG_START) return "";
-  var n = kegMap()[keyOf()] || 0;
+  var st = kegStats(), p = st.plan, goal = st.goal, n = st.today, wk = st.prog.weeks.length;
   var head = function(right){
     return '<div class="xchead"><span class="goaltag">Pelvic floor</span><span class="xcopt" id="kegProg">' + right + '</span></div>';
   };
@@ -1762,53 +1809,57 @@ function kegRow(isCurrent){
            '<button type="button" class="link" id="kegQuit">Stop</button></div></div>';
   }
   var dots = '';
-  for(var i=0; i<Math.max(KEG_GOAL, n); i++) dots += '<i class="' + (i < n ? "on" : "") + '"></i>';
+  for(var i=0; i<Math.max(goal, n); i++) dots += '<i class="' + (i < n ? "on" : "") + '"></i>';
   if(kegRun && kegRun.done){
-    return '<div class="keg done" id="kegBox">' + head(n + ' of ' + KEG_GOAL + ' today') +
+    return '<div class="keg done" id="kegBox">' + head(n + ' of ' + goal + ' today') +
            '<div class="kegphase">Session complete ✓</div>' +
            '<div class="kegdots">' + dots + '</div>' +
            '<div class="kegrow"><button type="button" class="gbtn" id="kegStart">' +
-           (n >= KEG_GOAL ? "One more" : "Next session") + '</button>' +
+           (n >= goal ? "One more" : "Next session") + '</button>' +
            '<button type="button" class="link" id="kegDone">Done for now</button></div></div>';
   }
-  var holds = '';
-  KEG_HOLDS.forEach(function(h){
-    holds += '<button type="button" data-h="' + h + '"' + (h === kegHold() ? ' class="sel" data-g="1"' : '') + '>' + h + 's</button>';
-  });
-  return '<div class="keg" id="kegBox">' + head(n + ' of ' + KEG_GOAL + ' today') +
+  return '<div class="keg" id="kegBox">' + head(n + ' of ' + goal + ' today') +
          '<div class="kegdots">' + dots + '</div>' +
-         '<div class="kegsub">' + (n >= KEG_GOAL ? "All three done today." : "Session " + (n+1) + " of " + KEG_GOAL + " · try this one " + KEG_WHERE[n % 3]) +
-         ' · about ' + Math.round(kegSecs(kegPlan())/60) + ' min</div>' +
-         '<div class="kegrow"><button type="button" class="gbtn" id="kegStart">' + (n ? "Start next session" : "Start session") + '</button>' +
-         '<span class="keghold">Hold <span class="seg" id="kegHold">' + holds + '</span></span></div></div>';
+         '<div class="kegsub">Week ' + wk + ' · ' + p.name + ' · hold ' + p.hold + 's × ' + p.reps +
+         ', then ' + p.flicks + ' quick flicks · about ' + Math.round(kegSecs(kegPlan())/60) + ' min<br>' +
+         (n >= goal ? "All " + goal + " done today." : "Session " + (n+1) + " of " + goal + " · try this one " + KEG_WHERE[n % 3]) + '</div>' +
+         '<div class="kegrow"><button type="button" class="gbtn" id="kegStart">' + (n ? "Start next session" : "Start session") + '</button></div></div>';
 }
 function kegCard(){
   if(keyOf() < KEG_START) return "";
   var s = kegStats(), pct = s.days ? (s.atGoal/s.days)*100 : 0;
+  var p = s.plan, wk = s.prog.week, wn = s.prog.weeks.length, nx = s.prog.next;
   var dots = '';
   s.last7.forEach(function(d){
-    dots += '<i class="' + (d.n >= KEG_GOAL ? "complete" : (d.n ? "partial" : "")) + '" title="' + esc(shortDate(d.k)) + ': ' + d.n + '"></i>';
+    dots += '<i class="' + (d.n >= d.g ? "complete" : (d.n ? "partial" : "")) + '" title="' + esc(shortDate(d.k)) + ': ' + d.n + ' of ' + d.g + '"></i>';
   });
   var tile = function(lab, val, sub){
     return '<div class="stile"><span>' + esc(lab) + '</span><b>' + esc(val) + '</b><small>' + esc(sub) + '</small></div>';
   };
   return '<section class="card" style="margin-top:20px">' +
-         '<div class="sechead"><span>Pelvic floor</span><span>' + KEG_GOAL + ' sessions a day</span></div>' +
+         '<div class="sechead"><span>Pelvic floor</span><span>' + p.sets + ' a day this week</span></div>' +
+         '<div class="arow"><span class="tlab">Week ' + wn + '</span>' +
+         '<span class="det">' + esc(p.name) + ' · hold ' + p.hold + 's × ' + p.reps + ' · ' + p.flicks +
+         ' flicks · ' + p.sets + ' a day</span>' +
+         '<span class="apct' + (wk.done >= wk.target ? " on" : "") + '">' + wk.done + '/' + wk.target + '</span></div>' +
          '<div class="weekrow"><span class="tlab">Last 7</span><div class="dots">' + dots + '</div>' +
-         '<div class="wnum">' + s.last7.filter(function(d){ return d.n >= KEG_GOAL; }).length + '/' + s.last7.length + '</div></div>' +
+         '<div class="wnum">' + s.last7.filter(function(d){ return d.n >= d.g; }).length + '/' + s.last7.length + '</div></div>' +
          '<div class="arow"><span class="tlab">At goal</span>' +
          '<span class="det">' + s.atGoal + ' of ' + s.days + ' days · since ' + esc(shortDate(KEG_START)) + '</span>' +
          '<span class="apct' + (pct >= MONTH_TARGET ? " on" : "") + '">' + pct.toFixed(0) + '%</span></div>' +
          '<div class="stiles">' +
-         tile("Today", s.today + " of " + KEG_GOAL, s.today >= KEG_GOAL ? "goal met" : "sessions done") +
-         tile("Streak", s.streak + (s.streak === 1 ? " day" : " days"), "at all " + KEG_GOAL) +
+         tile("Today", s.today + " of " + s.goal, s.today >= s.goal ? "goal met" : "sessions done") +
+         tile("Streak", s.streak + (s.streak === 1 ? " day" : " days"), "at the day’s goal") +
          tile("Sessions", fmtN(s.total), "since " + shortDate(KEG_START)) +
          tile("Daily average", s.avg.toFixed(1), "sessions a day") +
          '</div>' +
-         '<div class="note">Ten squeezes held ' + kegHold() + ' seconds with an equal rest, then ten quick flicks. ' +
-         'Build the hold toward 10 seconds over the coming weeks, and move from lying down to sitting to standing. ' +
-         'Breathe freely and keep your stomach, thighs and buttocks loose. Most men notice a change after six to eight weeks; ' +
-         'stop if it hurts, and don’t practise by stopping your urine midstream.</div></section>';
+         '<div class="note">' + p.reps + ' squeezes held ' + p.hold + ' seconds with an equal rest, then ' + p.flicks +
+         ' quick flicks, ' + p.sets + ' times a day. Three building weeks, then a lighter one — ' +
+         (nx.name === "Deload" ? "next week is a deload, lighter on purpose" :
+          "next week is hold " + nx.hold + "s × " + nx.reps + ", " + nx.sets + " a day") +
+         ', once you finish at least half of this week’s ' + wk.target + ' sessions. ' +
+         'Work from lying down to sitting to standing. Breathe freely and keep your stomach, thighs and buttocks loose. ' +
+         'Most men notice a change after six to eight weeks; stop if it hurts, and don’t practise by stopping your urine midstream.</div></section>';
 }
 
 /* ---------- export / import ---------- */
@@ -2473,9 +2524,6 @@ function wire(){
   var kpa = document.getElementById("kegPause"); if(kpa) kpa.onclick = function(){ kegPause(); };
   var kqu = document.getElementById("kegQuit"); if(kqu) kqu.onclick = function(){ kegQuit(); };
   var kdn = document.getElementById("kegDone"); if(kdn) kdn.onclick = function(){ kegRun = null; render(); };
-  document.querySelectorAll("#kegHold button").forEach(function(b){
-    b.onclick = function(){ state.kegHold = Number(b.dataset.h); save(); render(); };
-  });
   if(kegRun && !kegRun.done) kegPaint();
   var stIn = document.getElementById("steps");
   if(stIn){
