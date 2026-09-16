@@ -274,6 +274,21 @@ textarea.myq{min-height:96px;font-family:"Iowan Old Style","Charter",Palatino,Ge
  font-size:13px;padding:5px 12px;font-variant-numeric:tabular-nums}
 .stepin:focus{outline:2px solid var(--brass);outline-offset:1px;border-color:transparent}
 .stepin::placeholder{color:var(--ghost)}
+.keg{margin:16px 0 2px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--track)}
+.keg.run,.keg.done{border-color:var(--brass)}
+.kegphase{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:21px;color:var(--brass);margin-top:10px}
+.keg.run.rest .kegphase,.keg.run.frest .kegphase,.keg.run.break .kegphase,.keg.run.ready .kegphase{color:var(--ghost)}
+.kegcount{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:54px;line-height:1.1;
+ color:var(--parchment);font-variant-numeric:tabular-nums}
+.kegsub{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45}
+.bar.kegbar{margin:12px 0 0;height:5px}
+.kegrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:12px}
+.kegdots{display:flex;gap:6px;margin-top:10px}
+.kegdots i{width:22px;height:22px;border-radius:5px;border:1px solid var(--line);display:block}
+.kegdots i.on{background:var(--brass);border-color:var(--brass)}
+.keghold{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}
+.keghold .seg button{padding:5px 9px}
+.kegin{width:72px}
 .stepneed{font-size:12px;color:var(--muted);opacity:.8}
 .shero{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:8px 0 2px}
 .shero b{font-size:34px;font-weight:600;color:var(--parchment);letter-spacing:-.01em;line-height:1.1}
@@ -653,7 +668,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
-var APP_VER = "v26";
+var APP_VER = "v27";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -1221,7 +1236,8 @@ function tNow(f){ return trackerBy(f).shift < 0 ? yKey() : keyOf(); }
 // A cleared mark keeps its time so the clear syncs too.
 function shiftKey(k, n){ var d = asDate(k); d.setDate(d.getDate()+n); return keyOf(d); }
 // "st" (steps, a number) rides the same store as the yes/no trackers
-function hasVal(f, x){ return f === "st" ? (typeof x === "number" && isFinite(x)) : (x === "yes" || x === "no" || x === "off"); }
+var NUMFIELDS = {st:-1, kg:0};   // numeric marks and the day they describe (steps: yesterday, sessions: that day)
+function hasVal(f, x){ return NUMFIELDS[f] !== undefined ? (typeof x === "number" && isFinite(x)) : (x === "yes" || x === "no" || x === "off"); }
 function markVal(f, dk){
   var r = (state.marks||{})[dk], v = r && r[f];
   return hasVal(f, v) ? v : undefined;
@@ -1237,7 +1253,7 @@ function mergeMarks(src){
   if(!state.marks) state.marks = {};
   Object.keys(src||{}).forEach(function(dk){
     var theirs = src[dk] || {}, mine = state.marks[dk] || {};
-    TRACKERS.map(function(t){ return t.id; }).concat("st").forEach(function(f){
+    TRACKERS.map(function(t){ return t.id; }).concat(Object.keys(NUMFIELDS)).forEach(function(f){
       var at = f+"At";
       if(theirs[at] && theirs[at] > (mine[at]||"")){ mine[f] = theirs[f] != null ? theirs[f] : ""; mine[at] = theirs[at]; changed = true; }
     });
@@ -1249,7 +1265,7 @@ function setMark(f, dk, v){
   // Set (v = "yes"/"no") or clear (v = "") tracker f for day dk from the calendar.
   // If a written entry already holds this answer, or is the entry whose Today card asks it,
   // edit that entry so the Today card and the calendar never disagree; otherwise store a mark.
-  var shift = f === "st" ? -1 : trackerBy(f).shift, sd = shiftKey(dk, -shift), today = keyOf(), cur = currentDay();
+  var shift = NUMFIELDS[f] !== undefined ? NUMFIELDS[f] : trackerBy(f).shift, sd = shiftKey(dk, -shift), today = keyOf(), cur = currentDay();
   var holder = null, host = null;
   loggedDays().forEach(function(n){
     var e = state.entries[n];
@@ -1589,6 +1605,212 @@ function tWeek(map, first, nowKey, wd){
   return {days:out, n:n, elapsed:out.length, pct: out.length ? (n/out.length)*100 : 0};
 }
 
+/* ---------- pelvic floor: a guided session, three a day ---------- */
+// Routine follows Cleveland Clinic / MSKCC guidance for men: 10 endurance holds (squeeze and
+// relax for the same count, starting at 5 seconds and building toward 10 over weeks), then 10
+// quick flicks of about a second, at least 3 sessions a day, lying, sitting or standing.
+var KEG_START = "2026-09-16";
+var KEG_GOAL = 3;                       // sessions a day
+var KEG_REPS = 10, KEG_FLICKS = 10, KEG_BREAK = 10, KEG_FLICK_HOLD = 1, KEG_FLICK_REST = 2;
+var KEG_HOLDS = [3, 5, 8, 10];          // seconds per squeeze; build up week by week
+var KEG_WHERE = ["lying down", "sitting", "standing"];
+var kegRun = null, kegTimer = null, kegLock = null;
+
+function kegHold(){ var h = Number(state.kegHold || 5); return KEG_HOLDS.indexOf(h) >= 0 ? h : 5; }
+function kegPlan(){
+  var h = kegHold(), out = [{k:"ready", label:"Get ready", sub:"Breathe normally — don’t clench your stomach, thighs or buttocks", secs:5}];
+  for(var i=1; i<=KEG_REPS; i++){
+    out.push({k:"hold", label:"Squeeze", sub:"Lift and hold · " + i + " of " + KEG_REPS, secs:h});
+    out.push({k:"rest", label:"Relax", sub:"Let go completely · " + i + " of " + KEG_REPS, secs:h});
+  }
+  out.push({k:"break", label:"Break", sub:"Quick flicks next", secs:KEG_BREAK});
+  for(var j=1; j<=KEG_FLICKS; j++){
+    out.push({k:"flick", label:"Quick squeeze", sub:"Flick " + j + " of " + KEG_FLICKS, secs:KEG_FLICK_HOLD});
+    out.push({k:"frest", label:"Let go", sub:"Flick " + j + " of " + KEG_FLICKS, secs:KEG_FLICK_REST});
+  }
+  return out;
+}
+function kegSecs(plan){ var t = 0; plan.forEach(function(x){ t += x.secs; }); return t; }
+function kegMap(){
+  // day -> sessions done that day; the most recent edit wins, same as steps
+  var m = {};
+  Object.keys(state.entries).forEach(function(k){
+    var e = state.entries[k];
+    if(!e.date || staleEntry(e) || !hasVal("kg", e.kg)) return;
+    var cur = m[e.date];
+    if(!cur || (e.savedAt||"") > cur.at) m[e.date] = {v:e.kg, at:e.savedAt||""};
+  });
+  Object.keys(state.marks||{}).forEach(function(dk){
+    var r = state.marks[dk], at = r.kgAt||"", cur = m[dk];
+    if(hasVal("kg", r.kg) && (!cur || at > cur.at)) m[dk] = {v:r.kg, at:at};
+  });
+  var out = {};
+  Object.keys(m).forEach(function(k){ out[k] = m[k].v; });
+  return out;
+}
+function parseKeg(s){ var d = String(s||"").replace(/[^\d]/g, ""); return d ? Math.min(Number(d), 20) : null; }
+function kegStats(){
+  var m = kegMap(), today = keyOf(), end = asDate(today), total = 0, atGoal = 0, anyDay = 0, days = 0;
+  for(var d = asDate(KEG_START); d <= end; d.setDate(d.getDate()+1)){
+    var n = m[keyOf(d)] || 0;
+    days++; total += n;
+    if(n >= KEG_GOAL) atGoal++;
+    if(n > 0) anyDay++;
+  }
+  // a run of days at the full goal; today only counts once it is there, so a day in progress doesn't break it
+  var streak = 0, w = asDate(today);
+  if((m[today]||0) < KEG_GOAL) w.setDate(w.getDate()-1);
+  while(keyOf(w) >= KEG_START && (m[keyOf(w)]||0) >= KEG_GOAL){ streak++; w.setDate(w.getDate()-1); }
+  var last7 = [];
+  for(var i=6; i>=0; i--){
+    var e2 = asDate(today); e2.setDate(e2.getDate()-i);
+    var kk = keyOf(e2);
+    if(kk >= KEG_START) last7.push({k:kk, n:m[kk] || 0});
+  }
+  return {today:m[today] || 0, total:total, days:days, atGoal:atGoal, anyDay:anyDay,
+          streak:streak, last7:last7, avg: days ? total/days : 0};
+}
+function kegAdd(n){
+  var dk = keyOf();
+  setMark("kg", dk, (kegMap()[dk] || 0) + n);
+}
+function kegBuzz(k){
+  try { if(navigator.vibrate) navigator.vibrate(k === "hold" || k === "flick" ? 60 : 25); } catch(e){}
+}
+function kegWake(on){
+  try {
+    if(on && navigator.wakeLock && !kegLock){
+      navigator.wakeLock.request("screen").then(function(s){ kegLock = s; }, function(){});
+    } else if(!on && kegLock){
+      if(kegLock.release) kegLock.release(); kegLock = null;
+    }
+  } catch(e){ kegLock = null; }
+}
+function kegStart(){
+  var plan = kegPlan();
+  kegRun = {plan:plan, i:0, left:plan[0].secs, endAt: Date.now() + plan[0].secs*1000, paused:false, done:false};
+  if(kegTimer) clearInterval(kegTimer);
+  kegTimer = setInterval(kegTick, 100);
+  kegWake(true);
+  render();
+}
+function kegTick(){
+  if(!kegRun || kegRun.done || kegRun.paused) return;
+  var leftMs = kegRun.endAt - Date.now();
+  if(leftMs <= 0){
+    kegRun.i++;
+    if(kegRun.i >= kegRun.plan.length){ kegFinish(); return; }
+    kegBuzz(kegRun.plan[kegRun.i].k);
+    leftMs = kegRun.plan[kegRun.i].secs * 1000;
+    kegRun.endAt = Date.now() + leftMs;
+  }
+  kegRun.left = Math.max(1, Math.ceil(leftMs/1000));
+  kegPaint();
+}
+function kegPause(){
+  if(!kegRun || kegRun.done) return;
+  kegRun.paused = !kegRun.paused;
+  if(!kegRun.paused) kegRun.endAt = Date.now() + kegRun.left*1000;
+  kegWake(!kegRun.paused);
+  render();
+}
+function kegQuit(){
+  if(kegTimer){ clearInterval(kegTimer); kegTimer = null; }
+  kegWake(false); kegRun = null; render();
+}
+function kegFinish(){
+  if(kegTimer){ clearInterval(kegTimer); kegTimer = null; }
+  kegWake(false);
+  kegRun = {done:true};
+  kegAdd(1);          // save() runs inside setMark
+  kegBuzz("hold");
+  render();
+}
+function kegPaint(){
+  // updates the running timer in place — render() would steal focus and flicker
+  if(!kegRun || kegRun.done) return;
+  var st = kegRun.plan[kegRun.i], box = document.getElementById("kegBox");
+  if(!st || !box) return;
+  box.className = "keg run " + st.k;
+  var set = function(id, txt){ var n = document.getElementById(id); if(n) n.textContent = txt; };
+  set("kegPhase", st.label);
+  set("kegCount", kegRun.paused ? "⏸" : kegRun.left);
+  set("kegSub", st.sub);
+  set("kegProg", st.k === "flick" || st.k === "frest" ? "Quick flicks" :
+                 (st.k === "break" ? "Break" : (st.k === "ready" ? "Getting ready" : "Endurance holds")));
+  var done = 0, tot = 0;
+  kegRun.plan.forEach(function(x, i){ tot += x.secs; if(i < kegRun.i) done += x.secs; });
+  done += st.secs - kegRun.left;
+  var bar = document.getElementById("kegBar");
+  if(bar) bar.style.width = Math.min(100, (done/tot)*100) + "%";
+}
+function kegRow(isCurrent){
+  // the timer is for right now, so it only shows on the current day; past days fill in from the calendar
+  if(!isCurrent || keyOf() < KEG_START) return "";
+  var n = kegMap()[keyOf()] || 0;
+  var head = function(right){
+    return '<div class="xchead"><span class="goaltag">Pelvic floor</span><span class="xcopt" id="kegProg">' + right + '</span></div>';
+  };
+  if(kegRun && !kegRun.done){
+    var st = kegRun.plan[kegRun.i];
+    return '<div class="keg run ' + st.k + '" id="kegBox">' + head("Getting ready") +
+           '<div class="kegphase" id="kegPhase">' + esc(st.label) + '</div>' +
+           '<div class="kegcount" id="kegCount">' + (kegRun.paused ? "⏸" : kegRun.left) + '</div>' +
+           '<div class="kegsub" id="kegSub">' + esc(st.sub) + '</div>' +
+           '<div class="bar kegbar"><i id="kegBar" style="width:0%"></i></div>' +
+           '<div class="kegrow"><button type="button" class="gbtn" id="kegPause">' + (kegRun.paused ? "Resume" : "Pause") + '</button>' +
+           '<button type="button" class="link" id="kegQuit">Stop</button></div></div>';
+  }
+  var dots = '';
+  for(var i=0; i<Math.max(KEG_GOAL, n); i++) dots += '<i class="' + (i < n ? "on" : "") + '"></i>';
+  if(kegRun && kegRun.done){
+    return '<div class="keg done" id="kegBox">' + head(n + ' of ' + KEG_GOAL + ' today') +
+           '<div class="kegphase">Session complete ✓</div>' +
+           '<div class="kegdots">' + dots + '</div>' +
+           '<div class="kegrow"><button type="button" class="gbtn" id="kegStart">' +
+           (n >= KEG_GOAL ? "One more" : "Next session") + '</button>' +
+           '<button type="button" class="link" id="kegDone">Done for now</button></div></div>';
+  }
+  var holds = '';
+  KEG_HOLDS.forEach(function(h){
+    holds += '<button type="button" data-h="' + h + '"' + (h === kegHold() ? ' class="sel" data-g="1"' : '') + '>' + h + 's</button>';
+  });
+  return '<div class="keg" id="kegBox">' + head(n + ' of ' + KEG_GOAL + ' today') +
+         '<div class="kegdots">' + dots + '</div>' +
+         '<div class="kegsub">' + (n >= KEG_GOAL ? "All three done today." : "Session " + (n+1) + " of " + KEG_GOAL + " · try this one " + KEG_WHERE[n % 3]) +
+         ' · about ' + Math.round(kegSecs(kegPlan())/60) + ' min</div>' +
+         '<div class="kegrow"><button type="button" class="gbtn" id="kegStart">' + (n ? "Start next session" : "Start session") + '</button>' +
+         '<span class="keghold">Hold <span class="seg" id="kegHold">' + holds + '</span></span></div></div>';
+}
+function kegCard(){
+  if(keyOf() < KEG_START) return "";
+  var s = kegStats(), pct = s.days ? (s.atGoal/s.days)*100 : 0;
+  var dots = '';
+  s.last7.forEach(function(d){
+    dots += '<i class="' + (d.n >= KEG_GOAL ? "complete" : (d.n ? "partial" : "")) + '" title="' + esc(shortDate(d.k)) + ': ' + d.n + '"></i>';
+  });
+  var tile = function(lab, val, sub){
+    return '<div class="stile"><span>' + esc(lab) + '</span><b>' + esc(val) + '</b><small>' + esc(sub) + '</small></div>';
+  };
+  return '<section class="card" style="margin-top:20px">' +
+         '<div class="sechead"><span>Pelvic floor</span><span>' + KEG_GOAL + ' sessions a day</span></div>' +
+         '<div class="weekrow"><span class="tlab">Last 7</span><div class="dots">' + dots + '</div>' +
+         '<div class="wnum">' + s.last7.filter(function(d){ return d.n >= KEG_GOAL; }).length + '/' + s.last7.length + '</div></div>' +
+         '<div class="arow"><span class="tlab">At goal</span>' +
+         '<span class="det">' + s.atGoal + ' of ' + s.days + ' days · since ' + esc(shortDate(KEG_START)) + '</span>' +
+         '<span class="apct' + (pct >= MONTH_TARGET ? " on" : "") + '">' + pct.toFixed(0) + '%</span></div>' +
+         '<div class="stiles">' +
+         tile("Today", s.today + " of " + KEG_GOAL, s.today >= KEG_GOAL ? "goal met" : "sessions done") +
+         tile("Streak", s.streak + (s.streak === 1 ? " day" : " days"), "at all " + KEG_GOAL) +
+         tile("Sessions", fmtN(s.total), "since " + shortDate(KEG_START)) +
+         tile("Daily average", s.avg.toFixed(1), "sessions a day") +
+         '</div>' +
+         '<div class="note">Ten squeezes held ' + kegHold() + ' seconds with an equal rest, then ten quick flicks. ' +
+         'Build the hold toward 10 seconds over the coming weeks, and move from lying down to sitting to standing. ' +
+         'Breathe freely and keep your stomach, thighs and buttocks loose. Most men notice a change after six to eight weeks; ' +
+         'stop if it hurts, and don’t practise by stopping your urine midstream.</div></section>';
+}
+
 /* ---------- export / import ---------- */
 function toMarkdown(){
   var lines = ["# Bible reading log",""];
@@ -1750,6 +1972,8 @@ function render(){
         html += '</div>'+(g.shift < 0 ? stepsRow(entry, stale, effDate) : '')+'</div>';
       });
     }
+
+    html += kegRow(viewDay === currentDay());
 
     var n = answered(entry);
     html += '<div class="cardfoot"><div id="status" class="status'+(statusErr?" err":"")+'">'+
@@ -1927,6 +2151,12 @@ function render(){
                   '<input id="calSteps" class="stepin" type="text" inputmode="numeric" autocomplete="off" placeholder="0" value="'+
                   (csv != null ? fmtN(csv) : '')+'"></div>';
         }
+        if(calPick >= KEG_START && calPick <= todayKey){
+          var ckv = kegMap()[calPick];
+          html += '<div class="pmitem"><label class="pmlab" for="calKeg">Sessions</label>'+
+                  '<input id="calKeg" class="stepin kegin" type="text" inputmode="numeric" autocomplete="off" placeholder="0" value="'+
+                  (ckv != null ? ckv : '')+'"></div>';
+        }
         html += '</div>'+(calPick === todayKey ? '<div class="note">P, M, MG and steps for today get answered tomorrow.</div>' : '')+'</div>';
       }
 
@@ -2002,6 +2232,7 @@ function render(){
               '<div class="sub">'+totalComplete+' of '+YEAR_GOAL+' reading days toward the year</div></section>';
 
       html += stepsCard();
+      html += kegCard();
 
       if(months.length){
         html += '<section style="margin-top:20px"><div class="sechead"><span>By month</span></div>'+
@@ -2150,6 +2381,7 @@ function wire(){
   document.querySelectorAll("nav button").forEach(function(b){
     b.onclick = function(){
       page = b.dataset.page; statusMsg=""; calPick = null; myqDelArm = null;
+      if(kegRun && kegRun.done) kegRun = null;   // the finished-session card doesn't follow you around
       var n0 = parseKey(keyOf()); viewY = n0.y; viewM = n0.m;
       render();
     };
@@ -2232,6 +2464,19 @@ function wire(){
     cs.onchange = function(){ var n = parseSteps(cs.value); setMark("st", calPick, n == null ? "" : n); render(); };
     cs.onkeydown = function(ev){ if(ev.key === "Enter") cs.blur(); };
   }
+  var ck = document.getElementById("calKeg");
+  if(ck){
+    ck.onchange = function(){ var n = parseKeg(ck.value); setMark("kg", calPick, n == null ? "" : n); render(); };
+    ck.onkeydown = function(ev){ if(ev.key === "Enter") ck.blur(); };
+  }
+  var kst = document.getElementById("kegStart"); if(kst) kst.onclick = function(){ kegStart(); };
+  var kpa = document.getElementById("kegPause"); if(kpa) kpa.onclick = function(){ kegPause(); };
+  var kqu = document.getElementById("kegQuit"); if(kqu) kqu.onclick = function(){ kegQuit(); };
+  var kdn = document.getElementById("kegDone"); if(kdn) kdn.onclick = function(){ kegRun = null; render(); };
+  document.querySelectorAll("#kegHold button").forEach(function(b){
+    b.onclick = function(){ state.kegHold = Number(b.dataset.h); save(); render(); };
+  });
+  if(kegRun && !kegRun.done) kegPaint();
   var stIn = document.getElementById("steps");
   if(stIn){
     stIn.oninput = function(){
@@ -2318,7 +2563,7 @@ function wire(){
 
 function writeDraft(){
   var e = state.entries[viewDay] || { day: viewDay, date: keyOf() };
-  if(staleEntry(e)){ TRACKERS.forEach(function(t){ delete e[t.id]; }); delete e.gr; delete e.st; delete e.date; }
+  if(staleEntry(e)){ TRACKERS.forEach(function(t){ delete e[t.id]; }); delete e.gr; delete e.st; delete e.kg; delete e.date; }
   var any = false;
   QUESTIONS.forEach(function(q){
     var node = document.querySelector('textarea[data-q="'+q.id+'"]');
@@ -2343,6 +2588,8 @@ function writeDraft(){
     if(sv != null){ e.st = sv; any = true; } else delete e.st;
     if(markVal("st", smk) !== undefined) putMark("st", smk, "");
   }
+  // pelvic floor sessions are written by the timer, never by an input on this card
+  if(hasVal("kg", e.kg)) any = true;
   // goal of the day: read acknowledgement rides on the entry
   var gb = document.getElementById("goalRead");
   if(!gb){ if(e.gr) any = true; }
