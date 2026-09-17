@@ -87,7 +87,7 @@ textarea::placeholder{color:var(--ghost)}
 .mnav button{width:28px;height:28px;border-radius:6px;border:1px solid var(--line);background:transparent;
  color:var(--muted);font-size:16px;line-height:1;cursor:pointer}
 .mnav button:disabled{opacity:.25}
-.pips{position:absolute;bottom:3px;left:0;right:0;display:flex;justify-content:center;gap:3px}
+.pips{position:absolute;bottom:3px;left:0;right:0;display:flex;justify-content:center;gap:2px}
 .pip{width:11px;height:11px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;
  font-size:7px;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
  border:1px solid var(--pipline);color:var(--piptext)}
@@ -208,7 +208,13 @@ textarea::placeholder{color:var(--ghost)}
 .arow .det{font-size:12px;color:var(--muted)}
 .apct{font-family:"Iowan Old Style","Charter",Palatino,Georgia,serif;font-size:18px;color:var(--parchment)}
 .apct.on{color:var(--brass)}
-.mrow4{display:grid;grid-template-columns:1fr repeat(6,48px);gap:3px;align-items:baseline;
+.nstages{margin-top:12px}
+.nstages li{font-size:13px;line-height:1.45;color:var(--muted)}
+.nstages li::marker{color:var(--brass)}
+.kegsub b{color:var(--parchment);font-weight:600}
+.mscroll{overflow-x:auto}
+.mscroll .mrow4{min-width:430px}
+.mrow4{display:grid;grid-template-columns:1fr repeat(7,46px);gap:3px;align-items:baseline;
  border-bottom:1px solid var(--line);padding:11px 2px}
 .mrow4 .n{font-size:13px}
 .mrow4 .p{font-size:12px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -681,7 +687,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
-var APP_VER = "v31";
+var APP_VER = "v32";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -700,6 +706,8 @@ var TRACKERS = [
   {id:"p", label:"P", good:"no",  shift:-1},   // answer describes yesterday
   {id:"m", label:"M", good:"no",  shift:-1},
   {id:"j", label:"J", good:"yes", shift:0},    // journalling: describes the day itself
+  // How We Feel, filled out in the morning: mirrors J, but nothing before the day it started
+  {id:"h", label:"H", good:"yes", shift:0, start:"2026-09-17", hint:"Filled out How We Feel this morning"},
   {id:"g", label:"G", good:"yes", shift:0, weekday:1, hint:"Rewrote my life goals in my journal"},  // Mondays only
   // men's group meets Monday night: asked Tuesday morning, credited to Monday. A week the
   // group doesn't meet is answered "off" and counts neither for nor against.
@@ -1978,6 +1986,97 @@ function kegCard(){
          '<div class="grow"><button type="button" class="link" id="planOpen">The year ahead →</button></div></section>';
 }
 
+/* ---------- daily habits: one score across everything being tracked ---------- */
+// Every habit carries the same weight. Each is scored across its OWN applicable days — Mondays
+// only for G and MG, and never before the day that habit started — and those percentages are
+// then averaged flat. Today is left out until it closes, so a day in progress can't drag it down.
+function habitDefs(){
+  var prog = kegProgram(), dm = dateMap(), sMap = stepMap(), kMap = kegMap(), today = keyOf();
+  var pace = STEP_GOAL / countDays(STEP_START, STEP_END);
+  var defs = [], rf = firstDate();
+  if(rf) defs.push({id:"read", label:"Reading", from:rf,
+    score:function(k){ var e = dm[k]; return e ? (answered(e)/3)*100 : 0; }});
+  TRACKERS.forEach(function(t){
+    var map = pmMap(t.id), from = t.start || pmFirst(map);
+    if(!from) return;
+    defs.push({id:t.id, label:t.label, from:from, weekday:t.weekday,
+      score:function(k){ var v = map[k]; return v === null ? null : (v === true ? 100 : 0); }});
+  });
+  if(today > STEP_START) defs.push({id:"st", label:"Steps", from:STEP_START, to:STEP_END,
+    score:function(k){ var v = sMap[k]; return v == null ? 0 : Math.min(100, v/pace*100); }});
+  if(today >= KEG_START) defs.push({id:"kg", label:"Sessions", from:KEG_START,
+    score:function(k){ return kegDayPct(kMap[k] || 0, kegGoalOn(prog, k)); }});
+  return defs;
+}
+function habitWindow(defs, fromK, toK){
+  var per = [], sum = 0;
+  defs.forEach(function(d){
+    var startK = fromK > d.from ? fromK : d.from, tot = 0, n = 0;
+    if(startK > toK) return;
+    for(var dd = asDate(startK); keyOf(dd) <= toK; dd.setDate(dd.getDate()+1)){
+      var k = keyOf(dd);
+      if(d.to && k > d.to) break;
+      if(d.weekday != null && dd.getDay() !== d.weekday) continue;
+      var v = d.score(k);
+      if(v === null) continue;          // didn't apply (e.g. the group didn't meet)
+      tot += v; n++;
+    }
+    if(n){ var pct = tot/n; per.push({id:d.id, label:d.label, pct:pct, n:n}); sum += pct; }
+  });
+  return {per:per, pct: per.length ? sum/per.length : 0, n:per.length};
+}
+function habitsCard(){
+  var defs = habitDefs(), today = keyOf(), yest = shiftKey(today, -1);
+  if(!defs.length) return "";
+  var live = defs.filter(function(d){ return (!d.to || today <= d.to); });
+  var wk = habitWindow(defs, shiftKey(yest, -6), yest), all = habitWindow(defs, "1900-01-01", yest);
+  var since = defs.map(function(d){ return d.from; }).sort()[0];
+  var row = function(x){
+    return '<div class="trow"><span class="tlab">'+esc(x.label)+'</span>'+
+           '<div class="bar sm"><i style="width:'+Math.min(100, x.pct)+'%"></i>'+
+           '<u style="left:'+MONTH_TARGET+'%"></u></div>'+
+           '<span class="tpct">'+x.pct.toFixed(0)+'%</span>'+
+           '<span class="tgr">'+(x.n < 3 ? "—" : gradeFor(x.pct))+'</span></div>';
+  };
+  var h = '<section class="card" id="habitsCard"><div class="sechead"><span>Daily habits</span>'+
+          '<span>'+live.length+' tracked</span></div>'+
+          '<div class="shero"><b>'+(wk.n ? wk.pct.toFixed(0)+'%' : '—')+'</b>'+
+          '<span>overall, last 7 days'+(wk.n ? ' · '+gradeFor(wk.pct) : '')+'</span></div>';
+  if(wk.n) h += '<div class="trows">'+wk.per.map(row).join("")+'</div>';
+  if(all.n) h += '<div class="arow"><span class="tlab">All time</span>'+
+                 '<span class="det">'+all.n+' habit'+(all.n === 1 ? '' : 's')+' · since '+esc(shortDate(since))+'</span>'+
+                 '<span class="apct'+(all.pct >= MONTH_TARGET ? " on" : "")+'">'+all.pct.toFixed(0)+'%'+
+                 '<b>'+gradeFor(all.pct)+'</b></span></div>';
+  h += '<div class="note">Every habit counts the same: each is scored over its own days — Mondays only for G and MG, '+
+       'steps against the pace the walking goal needs, sessions against that week’s count — and the percentages are averaged. '+
+       'Today isn’t counted until it closes, and a habit joins the score the day it starts.</div></section>';
+  return h;
+}
+
+/* ---------- habits still to come ---------- */
+var NEXT_HABITS = [
+  {name:"Pushups", when:"Next up", tag:"1–2 years",
+   sum:"2 sets of 25 and 1 set of 10 every morning, built up to 100 across three sets, then to 100 in a single set.",
+   stages:["Weeks 1–4 · 25 / 25 / 10 every morning — 60 a day, no increases, just the habit",
+           "Weeks 5–20 · add about 5 reps every other week, smallest set first, up to 40 / 35 / 25 — 100 in three sets",
+           "Weeks 21–40 · hold 100 and shift the work forward: 45 / 35 / 20, then 55 / 30 / 15",
+           "Weeks 41–70 · down to two sets: 60 / 40, then 70 / 30, then 80 / 20",
+           "Weeks 71–104 · one set: 85 + 15, then 95 + 5, then 100 unbroken",
+           "Every fourth week is a deload — about a third fewer reps, same days"]},
+  {name:"Morning stretch", when:"Alongside pushups", tag:"short",
+   sum:"A few minutes after the pushups while the muscles are warm. Routine still to be picked."},
+  {name:"Bodyweight squats", when:"After pushups have held", tag:"later",
+   sum:"Same treatment as the pushups: a starting count, built up over months, with a lighter week every fourth."},
+  {name:"Sit-ups", when:"After squats have held", tag:"later",
+   sum:"Same again — start where it is easy, add slowly."},
+  {name:"Pull-ups", when:"Last of the five", tag:"later",
+   sum:"Starts with negatives or assisted reps before full ones count."},
+  {name:"Food boundaries", when:"Waiting on the details", tag:"80/20",
+   sum:"80% of meals inside the boundaries is a win, 20% outside is fine. Still to settle what counts and over what window."},
+  {name:"Money check-in", when:"Waiting on the details", tag:"daily",
+   sum:"A daily look at the account balances. Still to settle whether it records numbers or just asks whether you looked."}
+];
+
 /* ---------- export / import ---------- */
 function toMarkdown(){
   var lines = ["# Bible reading log",""];
@@ -2053,7 +2152,8 @@ function render(){
   html += '<nav><button data-page="today" class="'+(page==="today"?"on":"")+'">Today</button>'+
           '<button data-page="record" class="'+(page==="record"||page==="plan"?"on":"")+'">Record</button>'+   // the year plan hangs off Record
           '<button data-page="goals" class="'+(page==="goals"?"on":"")+'">Goals</button>'+
-          '<button data-page="quotes" class="'+(page==="quotes"?"on":"")+'">Quotes</button></nav>';
+          '<button data-page="quotes" class="'+(page==="quotes"?"on":"")+'">Quotes</button>'+
+          '<button data-page="next" class="'+(page==="next"?"on":"")+'">Next</button></nav>';
 
   if(page === "today"){
     var isNext = viewDay === nextUnloggedDay();
@@ -2134,6 +2234,7 @@ function render(){
           if(t.shift!==g.shift) return;
           // weekly: only when the day the answer describes is its weekday (MG: Tuesday asks about Monday)
           if(t.weekday != null && (!effDate || asDate(shiftKey(effDate, t.shift)).getDay() !== t.weekday)) return;
+          if(t.start && (!effDate || shiftKey(effDate, t.shift) < t.start)) return;   // not before it started
           html += segFor(t);
         });
         html += '</div>'+(g.shift < 0 ? stepsRow(entry, stale, effDate) : '')+'</div>';
@@ -2221,11 +2322,11 @@ function render(){
       var start = firstDate();
       var totalElapsed = Math.round((asDate(keyOf()) - asDate(start))/86400000) + 1;
 
-      var pMapv = pmMap("p"), mMapv = pmMap("m"), jMapv = pmMap("j"), gMapv = pmMap("g"), mgMapv = pmMap("mg");
-      var pF = pmFirst(pMapv), mF = pmFirst(mMapv), jF = pmFirst(jMapv), gF = pmFirst(gMapv), mgF = pmFirst(mgMapv);
+      var pMapv = pmMap("p"), mMapv = pmMap("m"), jMapv = pmMap("j"), gMapv = pmMap("g"), mgMapv = pmMap("mg"), hMapv = pmMap("h");
+      var pF = pmFirst(pMapv), mF = pmFirst(mMapv), jF = pmFirst(jMapv), gF = pmFirst(gMapv), mgF = pmFirst(mgMapv), hF = pmFirst(hMapv);
 
       var nowP = parseKey(keyOf());
-      var minKey = [start, pF, mF, jF, gF, mgF].filter(Boolean).sort()[0];
+      var minKey = [start, pF, mF, jF, gF, mgF, hF].filter(Boolean).sort()[0];
       var minP = parseKey(minKey);
       if(viewY < minP.y || (viewY === minP.y && viewM < minP.m)){ viewY = minP.y; viewM = minP.m; }
       if(viewY > nowP.y || (viewY === nowP.y && viewM > nowP.m)){ viewY = nowP.y; viewM = nowP.m; }
@@ -2238,6 +2339,7 @@ function render(){
       var jMS = jF ? pmMonthStats(jMapv, jF, viewY, viewM, keyOf()) : null;
       var gMS = gF ? pmMonthStats(gMapv, gF, viewY, viewM, keyOf(), 1) : null;
       var mgMS = mgF ? pmMonthStats(mgMapv, mgF, viewY, viewM, yKey(), 1) : null;
+      var hMS = hF ? pmMonthStats(hMapv, hF, viewY, viewM, keyOf()) : null;
 
       var barRow = function(lab, ms, alt){
         if(!ms) return '<div class="trow"><span class="tlab">'+lab+'</span>'+
@@ -2254,6 +2356,8 @@ function render(){
 
       var pm1 = viewM===1 ? {y:viewY-1,m:12} : {y:viewY,m:viewM-1};
       var nm1 = viewM===12 ? {y:viewY+1,m:1} : {y:viewY,m:viewM+1};
+      html += habitsCard();
+
       html += '<section class="card">'+
               '<div class="mnav"><button id="mPrev" data-y="'+pm1.y+'" data-m="'+pm1.m+'"'+(atMin?' disabled':'')+
               ' aria-label="Previous month">&#8249;</button>'+
@@ -2265,6 +2369,7 @@ function render(){
               barRow("P", pMS, true)+
               barRow("M", mMS, true)+
               barRow("J", jMS, true)+
+              barRow("H", hMS, true)+
               barRow("G", gMS, true)+
               barRow("MG", mgMS, true)+
               '</div>';
@@ -2277,11 +2382,13 @@ function render(){
       for(var bl=0; bl<lead; bl++) html += '<span class="blank"></span>';
       for(var d=1; d<=daysInMonth(viewY,viewM); d++){
         var dk = viewY+"-"+pad(viewM)+"-"+pad(d);
-        var pv = pMapv[dk], mv = mMapv[dk], jv = jMapv[dk];
-        var anyT = pv!==undefined || mv!==undefined || jv!==undefined || gMapv[dk]!==undefined || mgMapv[dk]!==undefined;
+        var pv = pMapv[dk], mv = mMapv[dk], jv = jMapv[dk], hv = hMapv[dk];
+        var anyT = pv!==undefined || mv!==undefined || jv!==undefined || hv!==undefined ||
+                   gMapv[dk]!==undefined || mgMapv[dk]!==undefined;
         var inR = tm && d>=tm.first && d<=tm.last;
         var cls = inR ? tm.marks[d] : (anyT ? "missed" : "out");
-        var pips = cls!=="out" ? '<span class="pips">'+pip(pv,"P")+pip(mv,"M")+pip(jv,"J")+'</span>' : '';
+        var pips = cls!=="out" ? '<span class="pips">'+pip(pv,"P")+pip(mv,"M")+pip(jv,"J")+
+                   (hF && dk >= hF ? pip(hv,"H") : '')+'</span>' : '';
         var pdn = pdm[dk] || (dk===todayKey && cls!=="out" ? curD : 0);
         var pdTag = pdn ? '<span class="pd" title="Reading day '+pdn+'">'+pdn+'</span>' : '';
         var isMon = new Date(viewY, viewM-1, d).getDay() === 1;
@@ -2301,11 +2408,12 @@ function render(){
 
       // backfill sheet for the tapped day: answers are for that day itself
       if(calPick && calPick.slice(0,7) === viewY+"-"+pad(viewM)){
-        var cMaps = {p:pMapv, m:mMapv, j:jMapv, g:gMapv, mg:mgMapv}, cwd = asDate(calPick).getDay(), yk = yKey();
+        var cMaps = {p:pMapv, m:mMapv, j:jMapv, g:gMapv, mg:mgMapv, h:hMapv}, cwd = asDate(calPick).getDay(), yk = yKey();
         html += '<div class="calsheet"><div class="xchead"><span class="goaltag">'+esc(prettyDate(calPick))+'</span>'+
                 '<button type="button" class="link" id="calClose">Done</button></div><div class="pmset calset">';
         TRACKERS.forEach(function(t){
           if(calPick > (t.shift < 0 ? yk : todayKey)) return;         // P/M for today are answered tomorrow
+          if(t.start && calPick < t.start) return;                    // nothing before the day it started
           if(t.weekday != null && cwd !== t.weekday) return;
           var b = cMaps[t.id][calPick], bad = t.good === "yes" ? "no" : "yes";
           var v = b === true ? t.good : (b === false ? bad : (b === null ? "off" : ""));
@@ -2334,10 +2442,11 @@ function render(){
               '<span><b class="pip ok">P</b>No</span>'+
               '<span><b class="pip no">M</b>Yes</span>'+
               '<span><b class="pip ok">J</b>Yes</span>'+
+              '<span><b class="pip ok">H</b>How We Feel</span>'+
               '<span><b class="gmeg">G</b>Mondays</span>'+
               '<span><b class="gmeg">MG</b>Men’s group</span>'+
               '<span><b class="pdeg">8</b>Reading day</span></div>'+
-              '<div class="note">Tap a day to fill in or fix its P, M, J and steps (G and MG on Mondays).</div></section>';
+              '<div class="note">Tap a day to fill in or fix its P, M, J, H and steps (G and MG on Mondays).</div></section>';
 
       var weekRow = function(lab, days, n, elapsed, pct){
         var dots = '';
@@ -2355,11 +2464,13 @@ function render(){
       if(pWk) html += weekRow("P", pWk.days, pWk.n, pWk.elapsed, pWk.pct);
       if(mWk) html += weekRow("M", mWk.days, mWk.n, mWk.elapsed, mWk.pct);
       if(jWk) html += weekRow("J", jWk.days, jWk.n, jWk.elapsed, jWk.pct);
+      var hWk = hF ? tWeek(hMapv, hF, keyOf()) : null;
+      if(hWk && hWk.elapsed) html += weekRow("H", hWk.days, hWk.n, hWk.elapsed, hWk.pct);
       if(gWk && gWk.elapsed) html += weekRow("G", gWk.days, gWk.n, gWk.elapsed, gWk.pct);
       var mgWk = mgF ? tWeek(mgMapv, mgF, yKey(), 1) : null;
       if(mgWk && mgWk.elapsed) html += weekRow("MG", mgWk.days, mgWk.n, mgWk.elapsed, mgWk.pct);
       html += '<div class="note">Rolling seven days, not Sunday-to-Saturday. '+
-              'P and M run a day behind \u2014 each answer lands on the day it describes. J is for the day itself. G is Mondays only. '+
+              'P and M run a day behind \u2014 each answer lands on the day it describes. J and H are for the day itself. G is Mondays only. '+
               'MG is Monday night, answered Tuesday; a week the group doesn\u2019t meet is left out.</div></section>';
 
       var aRow = function(lab, n, el, sinceKey, unit){
@@ -2383,6 +2494,10 @@ function render(){
         var jClean = Object.keys(jMapv).filter(function(k){ return jMapv[k]===true; }).length;
         html += aRow("J", jClean, Math.round((asDate(keyOf()) - asDate(jF))/86400000) + 1, jF);
       }
+      if(hF){
+        var hClean = Object.keys(hMapv).filter(function(k){ return hMapv[k]===true; }).length;
+        html += aRow("H", hClean, Math.round((asDate(keyOf()) - asDate(hF))/86400000) + 1, hF);
+      }
       if(gF){
         var gClean = Object.keys(gMapv).filter(function(k){ return gMapv[k]===true; }).length;
         html += aRow("G", gClean, countDays(gF, keyOf(), 1), gF, "Mondays");
@@ -2403,22 +2518,23 @@ function render(){
 
       if(months.length){
         html += '<section style="margin-top:20px"><div class="sechead"><span>By month</span></div>'+
-                '<div class="mrow4 hd"><span></span><span>Read</span><span>P</span><span>M</span><span>J</span><span>G</span><span>MG</span></div>';
+                '<div class="mscroll"><div class="mrow4 hd"><span></span><span>Read</span><span>P</span><span>M</span><span>J</span><span>H</span><span>G</span><span>MG</span></div>';
         months.forEach(function(ms){
           var pp = pF ? pmMonthStats(pMapv, pF, ms.y, ms.m) : null;
           var mm = mF ? pmMonthStats(mMapv, mF, ms.y, ms.m) : null;
           var jj = jF ? pmMonthStats(jMapv, jF, ms.y, ms.m, keyOf()) : null;
           var gg = gF ? pmMonthStats(gMapv, gF, ms.y, ms.m, keyOf(), 1) : null;
           var mgm = mgF ? pmMonthStats(mgMapv, mgF, ms.y, ms.m, yKey(), 1) : null;
+          var hh = hF ? pmMonthStats(hMapv, hF, ms.y, ms.m, keyOf()) : null;
           var cell = function(x){
             if(!x) return '<span class="p">\u2014</span>';
             return '<span class="p'+(x.pct>=MONTH_TARGET?" on":"")+'">'+x.pct.toFixed(0)+'%'+
                    '<b>'+(x.elapsed<GRADE_FLOOR?"\u2014":gradeFor(x.pct))+'</b></span>';
           };
           html += '<div class="mrow4"><span class="n">'+esc(monthShort(ms.y,ms.m))+'</span>'+
-                  cell(ms)+cell(pp)+cell(mm)+cell(jj)+cell(gg)+cell(mgm)+'</div>';
+                  cell(ms)+cell(pp)+cell(mm)+cell(jj)+cell(hh)+cell(gg)+cell(mgm)+'</div>';
         });
-        html += '</section>';
+        html += '</div></section>';
       }
     }
 
@@ -2587,6 +2703,23 @@ function render(){
               stat+'</div>';
       if(b !== Math.floor((i+1)/4) || i === WEEKS-1) html += '</section>';
     }
+  }
+
+  if(page === "next"){
+    html += '<section class="card"><div class="sechead"><span>Still to come</span><span>'+NEXT_HABITS.length+' waiting</span></div>'+
+            '<div class="note">One at a time. A new one only starts after everything already tracked has held for a stretch — '+
+            'the point is to keep what is here, not to add faster. Nothing on this page is being tracked yet.</div></section>';
+    NEXT_HABITS.forEach(function(x){
+      html += '<section class="card" style="margin-top:12px"><div class="sechead"><span>'+esc(x.name)+'</span>'+
+              '<span>'+esc(x.tag)+'</span></div>'+
+              '<div class="kegsub"><b>'+esc(x.when)+'</b> · '+esc(x.sum)+'</div>';
+      if(x.stages){
+        html += '<ol class="goals nstages">';
+        x.stages.forEach(function(s){ html += '<li>'+esc(s)+'</li>'; });
+        html += '</ol>';
+      }
+      html += '</section>';
+    });
   }
 
   app.innerHTML = html;
