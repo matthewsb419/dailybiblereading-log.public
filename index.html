@@ -687,7 +687,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
-var APP_VER = "v32";
+var APP_VER = "v33";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -1695,10 +1695,11 @@ function tWeek(map, first, nowKey, wd){
 /* ---------- pelvic floor: a guided session, three a day ---------- */
 // Routine follows Cleveland Clinic / MSKCC guidance for men: 10 endurance holds (squeeze and
 // relax for the same count, starting at 5 seconds and building toward 10 over weeks), then 10
-// quick flicks of about a second, at least 3 sessions a day, lying, sitting or standing.
+// quick flicks of about a second, at least 3 sessions a day. The guidance allows lying, sitting
+// or standing; he does all of his sitting, because that is when he actually does them.
 var KEG_START = "2026-09-16";
 var KEG_BREAK = 10, KEG_FLICK_HOLD = 1, KEG_FLICK_REST = 2;
-var KEG_WHERE = ["lying down", "sitting", "standing"];
+var KEG_WHERE = "sitting";
 var kegRun = null, kegTimer = null, kegLock = null;
 
 // Progressive overload with a deload every fourth week: three weeks of building, then a lighter
@@ -1938,7 +1939,7 @@ function kegRow(isCurrent){
          '<div class="kegdots">' + dots + '</div>' +
          '<div class="kegsub">Week ' + wk + ' · ' + p.name + ' · hold ' + p.hold + 's × ' + p.reps +
          ', then ' + p.flicks + ' quick flicks · about ' + Math.round(kegSecs(kegPlan())/60) + ' min<br>' +
-         (n >= goal ? "All " + goal + " done today." : "Session " + (n+1) + " of " + goal + " · try this one " + KEG_WHERE[n % 3]) + '</div>' +
+         (n >= goal ? "All " + goal + " done today." : "Session " + (n+1) + " of " + goal + " · " + KEG_WHERE) + '</div>' +
          '<div class="kegrow"><button type="button" class="gbtn" id="kegStart">' + (n ? "Start next session" : "Start session") + '</button></div></div>';
 }
 function kegCard(){
@@ -1981,7 +1982,7 @@ function kegCard(){
           "next week is hold " + nx.hold + "s × " + nx.reps + ", " + nx.sets + " a day") +
          ', once you finish at least half of this week’s ' + wk.target + ' sessions. ' +
          'A+ means every day hit all ' + p.sets + '; one short of the day’s count still passes at 80%, and today stays open until it is done. ' +
-         'Work from lying down to sitting to standing. Breathe freely and keep your stomach, thighs and buttocks loose. ' +
+         'All three sitting. Breathe freely and keep your stomach, thighs and buttocks loose. ' +
          'Most men notice a change after six to eight weeks; stop if it hurts, and don’t practise by stopping your urine midstream.</div>' +
          '<div class="grow"><button type="button" class="link" id="planOpen">The year ahead →</button></div></section>';
 }
