@@ -687,7 +687,7 @@ function schedulePush(){
 }
 
 /* ---------- gate ---------- */
-var APP_VER = "v33";
+var APP_VER = "v34";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -932,7 +932,8 @@ function goalIndex(k, n){
 }
 
 /* ---------- encouragement: one quote or verse a day, nothing to track ---------- */
-var QUOTE_CATS = [["do","Do hard things"],["hope","Hard now, good later"],["god","God is in control"]];
+var QUOTE_CATS = [["do","Do hard things"],["hope","Hard now, good later"],["god","God is in control"],
+                  ["steady","Small steps, every day"]];
 var QUOTES = [
   // do hard things
   {c:"do", a:"Theodore Roosevelt, “The Man in the Arena,” 1910",
@@ -1039,7 +1040,43 @@ var QUOTES = [
   {c:"god", a:"Betsie ten Boom, in The Hiding Place", t:"There is no pit so deep that He is not deeper still."},
   {c:"god", a:"Oswald Chambers, My Utmost for His Highest", t:"Faith never knows where it is being led, but it loves and knows the One who is leading."},
   {c:"god", a:"Horatio Spafford, “It Is Well with My Soul”", t:"When peace, like a river, attendeth my way,\nWhen sorrows like sea billows roll;\nWhatever my lot, Thou hast taught me to say,\nIt is well, it is well with my soul."},
-  {c:"god", a:"Martin Luther, “A Mighty Fortress Is Our God”", t:"A mighty fortress is our God,\nA bulwark never failing;\nOur helper He amid the flood\nOf mortal ills prevailing."}
+  {c:"god", a:"Martin Luther, “A Mighty Fortress Is Our God”", t:"A mighty fortress is our God,\nA bulwark never failing;\nOur helper He amid the flood\nOf mortal ills prevailing."},
+
+  // small steps, every day — consistency is what wins in the end
+  {c:"steady", a:"Luke 16:10", t:"One who is faithful in a very little is also faithful in much, and one who is dishonest in a very little is also dishonest in much."},
+  {c:"steady", a:"Matthew 25:21", t:"Well done, good and faithful servant. You have been faithful over a little; I will set you over much."},
+  {c:"steady", a:"Proverbs 13:11", t:"Wealth gained hastily will dwindle, but whoever gathers little by little will increase it."},
+  {c:"steady", a:"Proverbs 21:5", t:"The plans of the diligent lead surely to abundance, but everyone who is hasty comes only to poverty."},
+  {c:"steady", a:"Exodus 23:30", t:"Little by little I will drive them out from before you, until you have increased and possess the land."},
+  {c:"steady", a:"Zechariah 4:10", t:"For whoever has despised the day of small things shall rejoice, and shall see the plumb line in the hand of Zerubbabel."},
+  {c:"steady", a:"Psalm 1:2–3", t:"His delight is in the law of the LORD, and on his law he meditates day and night. He is like a tree planted by streams of water that yields its fruit in its season, and its leaf does not wither."},
+  {c:"steady", a:"Luke 9:23", t:"If anyone would come after me, let him deny himself and take up his cross daily and follow me."},
+  {c:"steady", a:"1 Timothy 4:15", t:"Practice these things, immerse yourself in them, so that all may see your progress."},
+  {c:"steady", a:"Hebrews 6:11–12", t:"And we desire each one of you to show the same earnestness to have the full assurance of hope until the end, so that you may not be sluggish, but imitators of those who through faith and patience inherit the promises."},
+  {c:"steady", a:"Proverbs 4:18", t:"But the path of the righteous is like the light of dawn, which shines brighter and brighter until full day."},
+  {c:"steady", a:"Ecclesiastes 9:10", t:"Whatever your hand finds to do, do it with your might."},
+  {c:"steady", a:"1 Corinthians 4:2", t:"Moreover, it is required of stewards that they be found faithful."},
+  {c:"steady", a:"Proverbs 24:33–34", t:"A little sleep, a little slumber, a little folding of the hands to rest, and poverty will come upon you like a robber, and want like an armed man."},
+  {c:"steady", a:"Philippians 2:12–13", t:"Work out your own salvation with fear and trembling, for it is God who works in you, both to will and to work for his good pleasure."},
+  {c:"steady", a:"Psalm 90:12", t:"So teach us to number our days that we may get a heart of wisdom."},
+  {c:"steady", a:"Octavia E. Butler", t:"First forget inspiration. Habit is more dependable. Habit will sustain you whether you’re inspired or not."},
+  {c:"steady", a:"Chuck Close", t:"Inspiration is for amateurs — the rest of us just show up and get to work."},
+  {c:"steady", a:"Zig Ziglar", t:"People often say that motivation doesn’t last. Well, neither does bathing — that’s why we recommend it daily."},
+  {c:"steady", a:"Anthony Trollope, An Autobiography", t:"A small daily task, if it be really daily, will beat the labours of a spasmodic Hercules."},
+  {c:"steady", a:"Will Durant, The Story of Philosophy, on Aristotle", t:"We are what we repeatedly do. Excellence, then, is not an act, but a habit."},
+  {c:"steady", a:"James Clear, Atomic Habits", t:"You do not rise to the level of your goals. You fall to the level of your systems."},
+  {c:"steady", a:"James Clear, Atomic Habits", t:"Habits are the compound interest of self-improvement."},
+  {c:"steady", a:"Gretchen Rubin", t:"What you do every day matters more than what you do once in a while."},
+  {c:"steady", a:"Annie Dillard, The Writing Life", t:"How we spend our days is, of course, how we spend our lives."},
+  {c:"steady", a:"Anne Lamott, Bird by Bird", t:"Bird by bird, buddy. Just take it bird by bird."},
+  {c:"steady", a:"Marcus Aurelius, Meditations", t:"At dawn, when you have trouble getting out of bed, tell yourself: “I have to go to work — as a human being. What do I have to complain of, if I’m going to do what I was born for — the things I was brought into the world to do?”"},
+  {c:"steady", a:"Epictetus, Discourses", t:"No great thing is created suddenly, any more than a bunch of grapes or a fig. If you tell me that you desire a fig, I answer you that there must be time. Let it first blossom, then bear fruit, then ripen."},
+  {c:"steady", a:"Ovid, Epistulae ex Ponto", t:"Dripping water hollows out stone, not by force but by persistence."},
+  {c:"steady", a:"Lao Tzu, Tao Te Ching", t:"A journey of a thousand miles begins with a single step."},
+  {c:"steady", a:"Thomas à Kempis, The Imitation of Christ", t:"Habit is overcome by habit."},
+  {c:"steady", a:"Benjamin Franklin, Poor Richard’s Almanack", t:"Little strokes fell great oaks."},
+  {c:"steady", a:"John Wooden", t:"It’s the little details that are vital. Little things make big things happen."},
+  {c:"steady", a:"Muhammad Ali", t:"I hated every minute of training, but I said, “Don’t quit. Suffer now and live the rest of your life as a champion.”"}
 ];
 // The user's own quotes live in the synced data, never in this public page:
 // state.myQuotes = [{id, t, a, made, at}], and a deleted one stays behind as {id, del:true, at}
