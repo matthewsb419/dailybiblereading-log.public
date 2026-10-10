@@ -1,0 +1,20 @@
+{
+  "name": "reading-log",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reading Log: the website at the repo root, wrapped as an iOS app with Capacitor",
+  "scripts": {
+    "build": "rm -rf www && mkdir www && cp index.html manifest.json icon.png icon-512.png www/",
+    "sync": "npm run build && npx cap sync ios",
+    "open": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/ios": "^8.5.3",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3"
+  }
+}

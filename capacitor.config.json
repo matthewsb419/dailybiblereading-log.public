@@ -1,0 +1,15 @@
+{
+  "appId": "com.matthewsb419.readinglog",
+  "appName": "Reading Log",
+  "webDir": "www",
+  "backgroundColor": "#10151a",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#10151a",
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 0, "backgroundColor": "#10151a" },
+    "StatusBar": { "style": "DARK", "overlaysWebView": true }
+  }
+}
