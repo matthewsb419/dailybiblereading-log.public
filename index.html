@@ -613,7 +613,9 @@ var TOKEN_KEY = "bibleLog.ghtoken";
 var TOKEN_EXPIRES = "2026-12-04"; // update this date whenever a new token is created
 var syncSha = null, pushTimer = null, syncOpen = false, syncBusy = false, syncHelpOpen = false;
 
-function ghToken(){ try { return localStorage.getItem(TOKEN_KEY) || ""; } catch(e){ return ""; } }
+function tokenKey(){ return NATIVE ? TOKEN_KEY+":"+profileKey() : TOKEN_KEY; }
+function ghToken(){ try { return localStorage.getItem(tokenKey()) || ""; } catch(e){ return ""; } }
+function syncOn(){ return NATIVE ? (cloudState === "available" || !!ghToken()) : !!ghToken(); }
 function b64enc(s){ return btoa(unescape(encodeURIComponent(s))); }
 function b64dec(s){ return decodeURIComponent(escape(atob(String(s).replace(/\n/g,"")))); }
 function setSyncStatus(msg, err){ statusMsg = msg; statusErr = !!err; paintStatus(); }
@@ -639,6 +641,10 @@ function mergeRemote(remote){
 }
 
 function syncNow(manual){
+  if(NATIVE) return cloudSync(manual);   // the app syncs iCloud first, then GitHub if a token is saved
+  ghSync(manual);
+}
+function ghSync(manual){
   if(!ghToken() || syncBusy || typeof fetch === "undefined") return;
   syncBusy = true;
   if(manual) setSyncStatus("Syncing…");
@@ -669,7 +675,7 @@ function syncNow(manual){
     if(syncSha) body.sha = syncSha;
     return fetch(SYNC_URL, {method:"PUT", headers:hdrs, body:JSON.stringify(body)})
       .then(function(r){
-        if(r.status === 409 || r.status === 422){ syncBusy = false; syncSha = null; syncNow(manual); return null; }
+        if(r.status === 409 || r.status === 422){ syncBusy = false; syncSha = null; ghSync(manual); return null; }
         if(r.status === 404 || r.status === 403) throw new Error("token can't write the data repo — grant it access to "+SYNC_REPO+" with Contents read and write");
         if(!r.ok) throw new Error("push failed ("+r.status+")");
         return r.json();
@@ -681,13 +687,119 @@ function syncNow(manual){
   .catch(function(e){ syncBusy = false; setSyncStatus("Sync: "+e.message, true); });
 }
 function schedulePush(){
-  if(!ghToken()) return;
+  if(!syncOn()) return;
   if(pushTimer) clearTimeout(pushTimer);
   pushTimer = setTimeout(function(){ pushTimer = null; syncNow(false); }, 2500);
 }
 
+/* ---------- iOS app: iCloud profile + Face ID ---------- */
+// Only runs inside the App Store app; the website keeps its password and GitHub sync as before.
+// Each person's log lives in their own iCloud private database (encrypted, readable only by them),
+// and this device's storage is namespaced by their iCloud account so a second person never sees it.
+var NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+var PROFILE_KEY = "bibleLog.profile";
+var RELOCK_MS = 60000;   // locks again after a minute in the background
+var profileId = "", cloudState = "", unlocked = false, booted = false, hiddenAt = 0;
+
+function nativeCall(method, opts){ return window.Capacitor.nativePromise("Profile", method, opts || {}); }
+function profileKey(){ return profileId || "local"; }
+function lsKey(){ return NATIVE ? LS_KEY+":"+profileKey() : LS_KEY; }
+function errText(e){ return (e && (e.message || e.errorMessage)) || String(e); }
+
+function cloudSync(manual){
+  if(syncBusy) return;
+  if(cloudState !== "available"){ ghSync(manual); return; }
+  syncBusy = true;
+  if(manual) setSyncStatus("Syncing…");
+  nativeCall("pull")
+  .then(function(r){
+    var remoteText = (r && r.data) || "";
+    if(remoteText){
+      var changed = false;
+      try { changed = mergeRemote(JSON.parse(remoteText)); } catch(e){}
+      if(changed){
+        if(page === "today" && !document.querySelector("textarea:focus,input:focus")) viewDay = currentDay();
+        save(); render();
+      }
+    }
+    var localText = JSON.stringify(state);
+    if(localText === remoteText) return {};
+    return nativeCall("push", {data: localText});
+  })
+  .then(function(p){
+    syncBusy = false;
+    if(p && p.conflict){ cloudSync(manual); return; }   // another device saved first: merge theirs, try again
+    setSyncStatus("Synced with iCloud");
+    ghSync(manual);
+  })
+  .catch(function(e){ syncBusy = false; setSyncStatus("iCloud: "+errText(e), true); ghSync(manual); });
+}
+
+function renderFaceLock(msg){
+  document.getElementById("app").innerHTML =
+    '<div class="lock"><div class="lockcard">'+
+    '<div class="eyebrow">Private</div>'+
+    '<h1>Reading Log</h1>'+
+    '<button id="faceGo">Unlock</button>'+
+    '<div class="lockmsg" id="gateMsg">'+esc(msg || "")+'</div>'+
+    '<div class="foot" style="opacity:.55;margin-top:16px">'+APP_VER+'</div>'+
+    '</div></div>';
+  document.getElementById("faceGo").onclick = nativeUnlock;
+}
+function nativeUnlock(){
+  nativeCall("unlock", {reason:"Unlock your reading log"})
+  .then(function(){
+    unlocked = true;
+    if(!booted) nativeBoot(); else { render(); syncNow(false); }
+  })
+  .catch(function(){ renderFaceLock("Still locked."); });
+}
+function nativeBoot(){
+  booted = true;
+  var last = "";
+  try { last = localStorage.getItem(PROFILE_KEY) || ""; } catch(e){}
+  nativeCall("account")
+  .then(function(a){
+    cloudState = a.status;
+    if(a.status === "available" && a.userId) profileId = a.userId;
+    else if(a.status === "noAccount" || a.status === "restricted") profileId = "";
+    else profileId = last;   // iCloud is just slow to answer: stay on whoever used this phone last
+  })
+  .catch(function(){ cloudState = "error"; profileId = last; })
+  .then(function(){
+    try {
+      localStorage.setItem(PROFILE_KEY, profileId);
+      // entries written on this phone before iCloud answered belong to whoever unlocked it: fold them in
+      var orphan = localStorage.getItem(LS_KEY+":local");
+      if(profileId && orphan && !localStorage.getItem(lsKey())){
+        localStorage.setItem(lsKey(), orphan);
+        localStorage.removeItem(LS_KEY+":local");
+      }
+    } catch(e){}
+    boot();
+    expiryBanner();
+  });
+}
+function nativeStart(){
+  renderFaceLock("");
+  nativeUnlock();
+  document.addEventListener("visibilitychange", function(){
+    if(document.hidden){ hiddenAt = Date.now(); return; }
+    if(!unlocked) return;
+    if(hiddenAt && Date.now() - hiddenAt > RELOCK_MS){
+      unlocked = false; renderFaceLock(""); nativeUnlock();
+    } else syncNow(false);   // pick up anything saved on another device meanwhile
+  });
+}
+function cloudNote(){
+  if(cloudState === "available") return "Saved privately in your iCloud account — only you can read it, and your other Apple devices on the same iCloud pick it up.";
+  if(cloudState === "noAccount") return "Saved on this iPhone only. Sign in to iCloud in Settings to back up your log and keep it private to you.";
+  if(cloudState === "restricted") return "iCloud is restricted on this device, so the log is saved on this iPhone only.";
+  return "iCloud isn’t answering right now; your log is saved on this iPhone and will sync when it’s back.";
+}
+
 /* ---------- gate ---------- */
-var APP_VER = "v34";
+var APP_VER = "v35";
 var GATE_KEY = "bibleLog.gate";
 var GATE_HASH = "rz593i";
 function gateHash(s){
@@ -1144,7 +1256,7 @@ var saveTimer = null;
 
 function load(){
   try {
-    var raw = localStorage.getItem(LS_KEY);
+    var raw = localStorage.getItem(lsKey());
     if(raw) state = JSON.parse(raw);
     if(!state.entries) state.entries = {};
     if(!state.goals) state.goals = [];
@@ -1156,7 +1268,7 @@ function load(){
 }
 function save(){
   try {
-    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    localStorage.setItem(lsKey(), JSON.stringify(state));
     statusMsg = "Saved on this device"; statusErr = false;
   } catch(e){
     statusMsg = "Couldn't save \u2014 browser storage is full or blocked. Export your notes now.";
@@ -2142,6 +2254,10 @@ function toMarkdown(){
   return lines.join("\n");
 }
 function download(text, filename, type){
+  if(NATIVE){   // the app's web view can't save blob links; hand the file to the iOS share sheet
+    nativeCall("share", {text:text, filename:filename}).catch(function(e){ setSyncStatus("Couldn't share: "+errText(e), true); });
+    return;
+  }
   var url = URL.createObjectURL(new Blob([text],{type:type}));
   var a = document.createElement("a");
   a.href = url; a.download = filename; document.body.appendChild(a); a.click();
@@ -2178,6 +2294,7 @@ function paintStatus(){
 }
 
 function render(){
+  if(NATIVE && !unlocked) return;   // a background sync must never paint over the lock screen
   var app = document.getElementById("app");
   var plan = PLAN[viewDay-1];
   var entry = state.entries[viewDay] || {};
@@ -2303,12 +2420,15 @@ function render(){
             '<button id="expMd">Download notes</button>'+
             '<button id="expJson">Download backup</button>'+
             '<button id="imp" class="quiet">Restore backup</button>'+
-            '<button id="syncBtn" class="quiet">'+(ghToken() ? "Sync now" : "Set up sync")+'</button></div>';
+            '<button id="syncBtn" class="quiet">'+(syncOn() ? "Sync now" : "Set up sync")+'</button></div>';
 
     if(syncOpen){
       html += '<section class="card" style="margin-top:14px"><div class="sechead"><span>Sync</span></div>'+
+              (NATIVE ? '<div class="note" style="margin:0 0 14px">'+esc(cloudNote())+'</div>'+
+                        '<label style="color:var(--parchment)">Website sync (optional)</label>' : '')+
               '<label for="ghtok">Paste a fine-grained GitHub token with Contents read &amp; write on '+
-              esc(SYNC_REPO)+'. It is stored only on this device.</label>'+
+              esc(SYNC_REPO)+'. It is stored only on this device.'+
+              (NATIVE ? ' Only needed to keep the website in step with this app.' : '')+'</label>'+
               '<input type="password" id="ghtok" class="tok" autocomplete="off" placeholder="'+
               (ghToken() ? "Token saved — paste a new one to replace it" : "github_pat_…")+'">'+
               '<div class="actions" style="margin-top:12px">'+
@@ -2341,10 +2461,11 @@ function render(){
     }
 
     html += '<p class="foot">'+
-            (ghToken() ? 'Syncing with a private GitHub repo — your other devices pick up changes when they open the app. '
+            (NATIVE ? esc(cloudNote())+(ghToken() ? ' Also syncing with the website. ' : ' ') :
+             ghToken() ? 'Syncing with a private GitHub repo — your other devices pick up changes when they open the app. '
                        : 'Saved in this browser on this device. Set up sync to share entries with your phone. ')+
             'Backups still work anytime.'+
-            (ghToken() ? ' <button class="link" id="syncCfg">Sync settings</button>' : '')+
+            (ghToken() || NATIVE ? ' <button class="link" id="syncCfg">Sync settings</button>' : '')+
             ' · '+APP_VER+'</p>';
   }
 
@@ -2919,7 +3040,7 @@ function wire(){
 
   var sb = document.getElementById("syncBtn");
   if(sb) sb.onclick = function(){
-    if(ghToken()){ syncNow(true); } else { syncOpen = true; render(); }
+    if(syncOn()){ syncNow(true); } else { syncOpen = true; render(); }
   };
   var sc = document.getElementById("syncCfg");
   if(sc) sc.onclick = function(){ syncOpen = true; render(); };
@@ -2927,7 +3048,7 @@ function wire(){
   if(gs) gs.onclick = function(){
     var v = document.getElementById("ghtok").value.trim();
     if(v){
-      try { localStorage.setItem(TOKEN_KEY, v); } catch(e){}
+      try { localStorage.setItem(tokenKey(), v); } catch(e){}
       syncOpen = false; render(); syncNow(true);
     }
   };
@@ -2935,7 +3056,7 @@ function wire(){
   if(gh) gh.onclick = function(){ syncHelpOpen = !syncHelpOpen; render(); };
   var gd = document.getElementById("ghDel");
   if(gd) gd.onclick = function(){
-    try { localStorage.removeItem(TOKEN_KEY); } catch(e){}
+    try { localStorage.removeItem(tokenKey()); } catch(e){}
     syncOpen = false; render();
   };
   var gc = document.getElementById("ghClose");
@@ -3064,9 +3185,9 @@ function renderLock(){
   input.focus();
 }
 
-if(isUnlocked()) boot(); else renderLock();
+if(NATIVE) nativeStart(); else if(isUnlocked()) boot(); else renderLock();
 buildThemePanel();
-expiryBanner();
+if(!NATIVE) expiryBanner();   // the app shows it after Face ID, once it knows whose token to check
 </script>
 </body>
 </html>
