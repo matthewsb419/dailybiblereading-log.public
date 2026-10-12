@@ -1543,6 +1543,7 @@ function stepsRow(entry, stale, effDate){
   return '<div class="stepline"><label class="pmlab" for="steps">Steps</label>'+
          '<input id="steps" class="stepin" data-s="1" type="text" inputmode="numeric" autocomplete="off" placeholder="0" value="'+
          (hasVal("st", v) ? fmtN(v) : "")+'">'+
+         (NATIVE ? '<button class="link" id="stepHealth" data-d="'+dk+'">From Health</button>' : '')+
          '<span class="stepneed" id="stepNeed">'+esc(stepNeedText())+'</span></div>';
 }
 function stepsCard(){
@@ -2990,6 +2991,19 @@ function wire(){
   var kdn = document.getElementById("kegDone"); if(kdn) kdn.onclick = function(){ kegRun = null; render(); };
   if(kegRun && !kegRun.done) kegPaint();
   var stIn = document.getElementById("steps");
+  var stH = document.getElementById("stepHealth");
+  if(stIn && stH) stH.onclick = function(){
+    // the app only: pull that day's total from Apple Health, then save it as if it had been typed
+    stH.textContent = "Checking…";
+    nativeCall("steps", {date: stH.dataset.d})
+    .then(function(r){
+      stH.textContent = "From Health";
+      if(!r.steps){ setSyncStatus("Health shows no steps that day — if that's wrong, allow Reading Log in Settings → Health → Data Access.", true); return; }
+      stIn.value = fmtN(r.steps);
+      writeDraft();
+    })
+    .catch(function(e){ stH.textContent = "From Health"; setSyncStatus("Health: "+errText(e), true); });
+  };
   if(stIn){
     stIn.oninput = function(){
       statusMsg = "Saving…"; statusErr = false; paintStatus();

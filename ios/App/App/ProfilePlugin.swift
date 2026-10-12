@@ -3,6 +3,7 @@ import UIKit
 import Capacitor
 import CloudKit
 import LocalAuthentication
+import HealthKit
 
 /// The app's private-profile layer, called from index.html as `Profile`:
 /// Face ID (or the phone passcode) to open the app, and the person's log kept in
@@ -16,7 +17,8 @@ public class ProfilePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "account", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "pull", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "push", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "share", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "share", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "steps", returnType: CAPPluginReturnPromise)
     ]
 
     private lazy var container = CKContainer(identifier: "iCloud.com.matthewsb419.readinglog")
@@ -156,6 +158,50 @@ public class ProfilePlugin: CAPPlugin, CAPBridgedPlugin {
         case .notAuthenticated: return "sign in to iCloud in Settings to sync"
         case .quotaExceeded: return "your iCloud storage is full"
         default: return ckErr.localizedDescription
+        }
+    }
+
+    // MARK: Steps from Apple Health
+
+    private lazy var health = HKHealthStore()
+
+    /// Total steps for one calendar day ("YYYY-MM-DD", local time), read-only. Health merges
+    /// iPhone and Apple Watch counts so nothing is counted twice.
+    @objc func steps(_ call: CAPPluginCall) {
+        guard HKHealthStore.isHealthDataAvailable(),
+              let type = HKObjectType.quantityType(forIdentifier: .stepCount) else {
+            call.reject("Apple Health isn't available on this device")
+            return
+        }
+        let fmt = DateFormatter()
+        fmt.calendar = Calendar(identifier: .gregorian)
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        fmt.dateFormat = "yyyy-MM-dd"
+        guard let dayString = call.getString("date"), let day = fmt.date(from: dayString),
+              let next = Calendar.current.date(byAdding: .day, value: 1, to: day) else {
+            call.reject("Bad date")
+            return
+        }
+        health.requestAuthorization(toShare: nil, read: [type]) { [weak self] _, err in
+            guard let self = self else { return }
+            if let err = err {
+                call.reject(err.localizedDescription)
+                return
+            }
+            let range = HKQuery.predicateForSamples(withStart: day, end: next, options: .strictStartDate)
+            let query = HKStatisticsQuery(quantityType: type, quantitySamplePredicate: range, options: .cumulativeSum) { _, stats, err in
+                if let err = err as? HKError, err.code == .errorNoData {
+                    call.resolve(["steps": 0])
+                    return
+                }
+                if let err = err {
+                    call.reject(err.localizedDescription)
+                    return
+                }
+                let n = stats?.sumQuantity()?.doubleValue(for: .count()) ?? 0
+                call.resolve(["steps": Int(n.rounded())])
+            }
+            self.health.execute(query)
         }
     }
 

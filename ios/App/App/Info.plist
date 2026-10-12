@@ -22,6 +22,8 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Reading Log reads yesterday's step count from Health to fill in your steps. It never writes to Health.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Face ID keeps your reading log private to you.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
