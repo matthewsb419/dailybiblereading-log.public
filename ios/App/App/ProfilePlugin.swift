@@ -34,6 +34,10 @@ public class ProfilePlugin: CAPPlugin, CAPBridgedPlugin {
     // MARK: Face ID
 
     @objc func unlock(_ call: CAPPluginCall) {
+        #if targetEnvironment(simulator)
+        // no Face ID to fumble with in the simulator; real iPhones always ask
+        call.resolve(["ok": true, "protected": false])
+        #else
         let context = LAContext()
         var error: NSError?
         // biometrics with the passcode as fallback; a phone with no passcode at all can't be locked
@@ -49,6 +53,7 @@ public class ProfilePlugin: CAPPlugin, CAPBridgedPlugin {
                 call.reject(err?.localizedDescription ?? "Not unlocked")
             }
         }
+        #endif
     }
 
     // MARK: iCloud profile
