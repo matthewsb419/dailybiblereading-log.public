@@ -781,6 +781,9 @@ function nativeBoot(){
   });
 }
 function nativeStart(){
+  // iOS zooms into any box with text under 16px when it's tapped; an app shouldn't zoom at all
+  var vp = document.querySelector('meta[name="viewport"]');
+  if(vp) vp.setAttribute("content", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover");
   renderFaceLock("");
   nativeUnlock();
   document.addEventListener("visibilitychange", function(){
