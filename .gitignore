@@ -4,3 +4,6 @@ ios/App/build/
 ios/DerivedData/
 .DS_Store
 xcuserdata/
+ios-native/ReadingLogCore/.build/
+ios-native/ReadingLogCore/.swiftpm/
+ios-native/build/
