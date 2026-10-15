@@ -141,6 +141,48 @@ function edits(){
   return out;
 }
 
+// saving the Today card: the website's writeDraft() reads the page, so give it a fake page
+function drafts(){
+  const out = [];
+  const nowISO = "2026-10-20T09:00:00";
+  const probe = withState(nowISO, base);
+  const keys = Object.keys(probe.state.entries);
+  const staleKey = keys.find(k => probe.staleEntry(probe.state.entries[k]));
+  const scenarios = [
+    { name: "new current day", day: probe.currentDay(),
+      answers: { god: "He keeps promises", stood: "Why the census?", today: "Trust him" },
+      trackers: { p: "no", m: "yes", j: "yes", h: null }, steps: "12,345", goalRead: true, ec: { text: "Written", ch: 3, qi: 4 } },
+    { name: "clear a past day", day: Number(keys[2]), answers: { god: "", stood: "", today: "" }, steps: "", goalRead: false },
+    { name: "write on a stale day", day: Number(staleKey), answers: { god: "Now written", stood: "", today: "" }, trackers: { j: "no" } },
+    { name: "past day, untouched trackers", day: Number(keys[4]), answers: { god: "Edited", stood: "x", today: "y" }, goalRead: false, ec: { text: "  ", ch: 1, qi: 0 } },
+  ].filter(x => x.day);
+  for(const sc of scenarios){
+    const w = withState(nowISO, base);
+    w.viewDay = sc.day;
+    const node = v => ({ value: v, dataset: {} });
+    const seg = v => ({ querySelector: () => (v ? { dataset: { v } } : null) });
+    const doc = {
+      querySelector(sel){
+        let m;
+        if((m = sel.match(/^textarea\[data-q="(\w+)"\]$/))) return m[1] in sc.answers ? node(sc.answers[m[1]]) : null;
+        if((m = sel.match(/^\.seg\[data-t="(\w+)"\]$/))) return sc.trackers && m[1] in sc.trackers ? seg(sc.trackers[m[1]]) : null;
+        if(sel === 'textarea[data-x="ec"]') return sc.ec ? { value: sc.ec.text, dataset: { ch: String(sc.ec.ch), qi: String(sc.ec.qi) } } : null;
+        return null;
+      },
+      getElementById(id){
+        if(id === "steps") return "steps" in sc ? node(sc.steps) : null;
+        if(id === "goalRead") return "goalRead" in sc ? { dataset: { v: sc.goalRead ? "yes" : "" } } : null;
+        return null;
+      },
+      querySelectorAll(){ return []; },
+    };
+    w.document = doc;
+    w.writeDraft();
+    out.push({ ...sc, now: nowISO, state: w.state });
+  }
+  return out;
+}
+
 const nows = ["2026-09-20T08:00:00", "2026-10-14T21:30:00", "2026-10-20T09:00:00", "2026-12-26T12:00:00", "2027-03-01T07:00:00"];
 const w0 = loadWeb(nows[0]);
 const fixtures = {
@@ -149,6 +191,7 @@ const fixtures = {
   state: base,
   snapshots: nows.map(snapshot),
   edits: edits(),
+  drafts: drafts(),
 };
 fs.writeFileSync(outPath, JSON.stringify(fixtures));
 console.log(`wrote ${outPath} (${(fs.statSync(outPath).size / 1024).toFixed(0)} KB, ${fixtures.snapshots.length} dates, ${fixtures.plan.length} plan days)`);

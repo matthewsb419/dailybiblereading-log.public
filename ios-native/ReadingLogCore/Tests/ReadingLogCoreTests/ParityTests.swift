@@ -168,4 +168,21 @@ final class ParityTests: XCTestCase {
             check(ed["state"], lg.state, "edit[\(name)]")
         }
     }
+
+    func testSavingTheTodayCard() {
+        let list = fx["drafts"]!.array!
+        XCTAssertFalse(list.isEmpty)
+        for sc in list {
+            var lg = log(at: sc["now"]!.string!)
+            let day = Int(sc["day"]!.number!)
+            var d = Log.DayDraft()
+            d.answers = (sc["answers"]?.object ?? [:]).mapValues { $0.string ?? "" }
+            if let t = sc["trackers"]?.object { d.trackers = t.mapValues { $0.string } }
+            d.steps = sc["steps"]?.string
+            d.goalRead = sc["goalRead"]?.bool
+            if let e = sc["ec"]?.object { d.extraCredit = (e["text"]!.string!, Int(e["ch"]!.number!), Int(e["qi"]!.number!)) }
+            lg.saveDay(day, d)
+            check(sc["state"], lg.state, "draft[\(sc["name"]!.string!)]")
+        }
+    }
 }

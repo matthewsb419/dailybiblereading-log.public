@@ -4,7 +4,10 @@ import Foundation
 // YESTERDAY: entry.st, or marks[day].st when filled in from the calendar. Once the main goal is
 // reached, the stretch goal takes over everywhere.
 
-public struct StepDay: Sendable, Equatable { public let k: DayKey; public let v: Double? }
+public struct StepDay: Sendable, Equatable {
+    public let k: DayKey; public let v: Double?
+    public init(k: DayKey, v: Double?) { self.k = k; self.v = v }
+}
 
 public struct StepStats: Sendable {
     public let map: [DayKey: Double]
